@@ -1,0 +1,159 @@
+:root {
+  --main-width: 1200px;
+  --nav-width: var(--main-width);
+}
+
+.post-content h2 {
+  border-top: 3px solid var(--primary);
+  margin-top: 2rem;
+  padding-top: 0.6rem;
+}
+
+.post-content h3 {
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+  padding-top: 0.4rem;
+}
+
+/* Summary table — keep the Field column (col 1) on a single line so
+   labels like "KEV / EPSS / CVSS" don't wrap. The field labels are all
+   short, so nowrap costs little width; the Detail column takes the rest. */
+.post-content table.summary th:first-child,
+.post-content table.summary td:first-child {
+  white-space: nowrap;
+}
+
+.post-content table.references {
+  font-size: 0.85em;
+}
+
+/* References table column behaviour:
+   - Source (col 1) gets a fixed 33% share so it stays a comfortable
+     width; it wraps at spaces but not mid-word.
+   - URL (col 2) takes the rest; overflow-wrap: anywhere lets its long
+     unbroken URLs (the Salsa patch link especially) break inside the
+     cell rather than forcing the column wide. */
+.post-content table.references th:first-child,
+.post-content table.references td:first-child {
+  width: 33%;
+}
+.post-content table.references td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+
+/* Distribution-status table — keep every column except the last (Status)
+   on a single line, so version strings, labels like "11 (bullseye,
+   LTS)", and two-word column headers ("First fixed") don't wrap. Status
+   keeps wrapping: it carries the longest text (advisory IDs, short
+   notes) and its own hanging indent. Targeting `:not(:last-child)`
+   works with and without the group-row transform — that transform
+   removes the Distribution cell (shifting the left-anchored indices)
+   while the no-JS fallback keeps it, but Status is the last cell either
+   way; a group heading row's single colspan th is its row's last child,
+   so headings stay free to wrap. Trade-off: the table can widen past
+   the content column on narrow viewports; the page scrolls horizontally
+   rather than the columns reflowing — acceptable for an
+   information-dense reference. */
+.post-content table.distros th:not(:last-child),
+.post-content table.distros td:not(:last-child) {
+  white-space: nowrap;
+}
+
+/* Group heading rows (inserted by extend_footer.html in place of the
+   Distribution column): one full-width row per distribution,
+   left-aligned and set off from the preceding group. With separate
+   borders (below) the 1px top border stacks on the 1px bottom border
+   of the row above, giving the same 2px divider as under collapsed
+   borders.
+
+   Each group heading also sticks, directly below the stuck column
+   header, so the current distribution stays identifiable mid-scroll;
+   the next group's heading slides over it. The offset is the header
+   row's live height, published as --distros-thead-h by the same
+   script that creates these rows; the em fallback approximates one
+   header line. z-index sits below the column header (2), above plain
+   cells. */
+.post-content table.distros tr.distro-group th {
+  text-align: left;
+  border-top: 1px solid var(--border);
+  background: var(--code-bg);
+  position: sticky;
+  top: var(--distros-thead-h, 2.6em);
+  z-index: 1;
+}
+
+/* Sticky column headers: keep the header row visible while scrolling
+   the long table. Three prerequisites, all handled here:
+   - position: sticky must sit on the th cells, not on thead/tr;
+   - collapsed borders are painted by the row grid and would scroll
+     away from under the stuck cells, so this table switches to
+     separate borders (spacing 0) and rebuilds the theme's 1px grid
+     from per-cell right+bottom borders (plus left on the first column
+     and top on the header), which travel with their cells;
+   - the theme's base reset sets `table { overflow-x: auto }`, and any
+     non-visible overflow-x forces overflow-y to compute to auto too,
+     making the table its own scroll container — sticky then binds to
+     the table's scrollport, which never scrolls vertically, so the
+     header never sticks. overflow: visible restores viewport-relative
+     sticking; an over-wide table now widens the page instead of
+     scrolling internally, the trade-off already documented above.
+   The opaque background hides the rows sliding underneath. */
+.post-content table.distros {
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.post-content table.distros th,
+.post-content table.distros td {
+  border-width: 0 1px 1px 0;
+}
+.post-content table.distros tr > :first-child {
+  border-left-width: 1px;
+}
+.post-content table.distros thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-top-width: 1px;
+  background: var(--theme);
+}
+
+.post-content td {
+  vertical-align: top;
+  text-align: left;
+}
+
+/* Status cells (tagged by extend_footer.html — those starting with a
+   status emoji) get a hanging indent: the emoji sits in a fixed left
+   gutter and wrapped text indents past it, so the emoji column stays
+   visually scannable. The 13px matches PaperMod's table-cell padding,
+   keeping the emoji aligned with the column header. !important beats
+   PaperMod's higher-specificity cell-padding rule. */
+.post-content td.status {
+  padding-left: calc(13px + 1.6em) !important;
+  text-indent: -1.6em;
+}
+
+.post-content th {
+  vertical-align: bottom;
+  text-align: left;
+}
+
+/* Collapsible sections (the details shortcode — e.g. the full
+   verification log): a quiet, clickable appendix toggle. */
+.post-content details > summary {
+  cursor: pointer;
+  width: fit-content;
+  font-weight: 500;
+}
+
+.copy-code {
+  padding: 4px;
+  align-items: center;
+  line-height: 1;
+}
+
+div.highlight:hover .copy-code,
+pre:hover .copy-code {
+  display: flex;
+}

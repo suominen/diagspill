@@ -1,0 +1,162 @@
+You are running headless from cron to refresh the DiagSpill patch
+tracker. The wrapper has already fetched origin and checked out the
+auto-update branch with origin/main merged forward, and has also refreshed
+the local kernel clones under ~/src/linux/{stable,net,vulns}
+and the nixpkgs clone at ~/src/nixos/nixpkgs — inspect them via the
+`origin/...` remote-tracking refs without re-fetching.
+
+DiagSpill (CVE-2026-74469) is a heap overflow in the Linux kernel's SCTP
+sock_diag reporting. sctp_assoc_add_peer() counts an association's peer
+transports in a 16-bit transport_count; the 65,536th unique peer wraps it
+to zero, and sctp_diag then reserves a zero-length INET_DIAG_PEERS payload
+but copies every transport's sockaddr_storage anyway — about 8 MiB written
+past the skb tail. An unprivileged local user with the sctp and sctp_diag
+modules available can build the association and issue the diag dump
+itself; no user namespace or capability is needed.
+The canonical fix is bd0e9289e264 (sctp: prevent peer transport count
+overflow), first released in v7.2-rc6. The bug was introduced by
+8f840e47f190 (sctp: add the sctp_diag.c file) in v4.7, so the reachable
+window is 4.7 through 7.1 (and 7.2 before -rc6) — every maintained kernel
+line and every tracked distro kernel is in-window; there are no
+not-affected rows.
+DiagSpill was disclosed together with three other bugs by the same
+discoverer — DirtyAH6 (CVE-2026-80844), TUNderflow (CVE-2026-81000), and
+PPPoEject (CVE-2026-68121) — each tracked separately at
+https://kimmo.cloud/{dirtyah6,tunderflow,pppoeject}/. They have their own
+fixes and first-fixed releases; do not mix their status into this tracker.
+
+References:
+- Public PoC: https://github.com/manizada/DiagSpill
+- Kernel fix: https://github.com/torvalds/linux/commit/bd0e9289e2642f6a5c54faad304ce0f41e926d22
+
+Per-branch fixed versions and per-distro status all live in
+site/content/_index.md (the canonical tracker). Read it first rather than
+relying on anything cached here.
+
+Working-tree hygiene: stream a fetch through a pipe — `curl -fsSL <url> |
+grep …` — when one pass over the data is enough. If you genuinely need a
+scratch file, save it in the worktree under a `.scratch-` prefix (e.g.
+`.scratch-advisories.json`), work on it there, and `rm` it before you
+commit — never `git add` a scratch file. Write it with `curl -o
+.scratch-…` or `… | tee .scratch-… > /dev/null`: a shell redirection into
+a file (`> .scratch-…`) is refused by Claude Code even inside the
+worktree, and retrying it in another spelling is wasted effort
+(`/dev/null` is the one redirection target that passes). Read it back
+with an allowlisted reader (`zcat .scratch-x.gz | grep …`,
+`jq … .scratch-x.json`).
+Don't use /tmp: Bash file reads are confined to the worktree, so a file
+there can be written but not read back. The wrapper's `git clean -fd`
+sweeps forgotten scratch on the next run, but the only thing you should
+leave behind is the edited tracker (and its commit).
+
+1. Read CLAUDE.md to learn the project conventions (the single-axis kernel
+   verdict, any reachability/exposure discriminator that lives in prose not
+   columns, the status wording, the sticky First fixed / Fixed since rules,
+   and the date handling), then read site/content/_index.md.
+
+2. Re-verify each entry currently marked vulnerable (:x:), staged
+   (:warning:), or unverified (:grey_question:).
+
+   Note on kernel.org: cgit HTML pages and lore.kernel.org are
+   Anubis-gated and WebFetch hits the no-JS challenge (mailing-list
+   search is unreachable). Use the persistent local kernel clones —
+   already refreshed by the wrapper, inspect via `origin/...` refs:
+     ~/src/linux/stable            — stable/linux.git
+     ~/src/linux/net               — netdev "net" tree (SCTP fixes land here first)
+     ~/src/linux/vulns             — CNA CVE database (record for CVE-2026-74469)
+   Plain-text kernel.org endpoints (e.g. /finger_banner) are WebFetch-able.
+
+   a. Upstream stable kernels: GET https://www.kernel.org/finger_banner for
+      the current point release per stable tree, then for each in-window
+      branch check whether the backport has landed (search by upstream
+      reference/subject, not `git tag --contains`):
+        git -C ~/src/linux/stable log origin/linux-<series>.y \
+          --grep=bd0e9289e264 --grep='transport count overflow' --format='%h %s'
+      The upstream rows are the "Linux kernel" distribution at the top of
+      the combined *Patch status* table: refresh their *Current kernel*
+      cells each run. *First fixed* / *Fixed since* / *Status* are sticky
+      and gain values only when a previously-unpatched branch first picks
+      up the backport.
+
+   b. CVE record — CVE-2026-74469 is assigned. The authoritative per-branch
+      introduced:fixed versions are in the vulns.git dyad (via origin/master):
+        git -C ~/src/linux/vulns show \
+          origin/master:cve/published/2026/CVE-2026-74469.dyad
+
+3. Distro rows — the *Current kernel* column is LIVE: refresh it for every
+   row on every run and record any movement (a version-only bump is a real
+   change — commit it and bump lastmod). The verdict columns are STICKY:
+   *Status*, *First fixed*, and *Fixed since* change only when a row
+   actually adopts the fix — a kernel bump that stays in-window without
+   the backport updates *Current kernel* and nothing else. Re-pull the
+   KERNEL version per row (Proxmox Packages.gz; NixOS channel pin;
+   Rocky/Amazon repodata — exact recipes in CLAUDE.md). A row flips to
+   ":white_check_mark: Fixed" only when its kernel carries the backport;
+   on a flip, set *First fixed* to the first fixed build and *Fixed since*
+   per the CLAUDE.md rule. zcat, gunzip, grep, sort, jq and tee are
+   allowlisted; python3, awk, sed and cat are not — if one of those is
+   refused, don't retry it in another spelling. Do NOT record NixOS
+   channel git-revisions.
+
+      - Debian: the SECURITY TRACKER is authoritative for status, not a
+        madison version compare — the base suite lags the -security upload,
+        and Debian backports below the upstream first-fixed release. WebFetch
+        the per-CVE page or curl the JSON:
+          curl -fsS 'https://security-tracker.debian.org/tracker/data/json'
+        read each release's status + the version under `repositories`
+        (a <suite>-security entry = shipped as a security update). Use
+        madison only for the base-suite version and the sid/testing lineage:
+          curl -fsS 'https://api.ftp-master.debian.org/madison?package=linux&s=sid,forky,trixie,bookworm&text=on'
+        For the bookworm `linux-6.12` opt-in row the tracker has no
+        per-CVE entry: read the published version from the
+        bookworm-security Packages index (`linux-image-6.12.*+deb12-amd64`),
+        not from madison, whose `new` suite is the queue, not the archive.
+      - Rocky / RHEL: the Red Hat security data API is the authoritative
+        leading signal (RHEL is upstream of Rocky/Alma) — curl
+        https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-74469.json
+        and read the kernel fix_state + affected_release. While fix_state is
+        Affected with no affected_release/RHSA, EL is unfixed (Rocky :x:).
+        When an RHSA + fixed NVR appears, confirm via Rocky BaseOS repodata
+        (zcat) reaching it; cross-check AlmaLinux via OSV
+        https://api.osv.dev/v1/vulns/CVE-2026-74469.
+      - Amazon: the ALAS signal is the repodata updateinfo.xml.gz (maps CVE
+        -> ALAS -> fixed NVR), NOT the JS-rendered per-CVE ALAS page (returns
+        nothing headlessly). Fetch <base>repodata/updateinfo.xml.gz and pipe
+        it through zcat into ./scripts/alas-cve CVE-2026-74469 -- one line per
+        advisory and kernel stream (kernel/kernel6.12/kernel6.18) with the
+        fixed NVR; exit 1 means no advisory names the CVE. Never grep
+        updateinfo.xml by line: entries share physical lines and a grep
+        pairs one advisory's CVEs with its neighbour's packages. Versions
+        from primary.xml.gz.
+
+4. Edit site/content/_index.md per the conventions in CLAUDE.md. If you make
+   content changes, bump `lastmod`. If nothing changed, leave the file alone
+   — don't bump `lastmod` on a no-op run. Never write "no change" /
+   "unchanged from prior run" / "no verdict changes this run" prose into the
+   tracker — silence is how the tracker says "unchanged". Even on a run that
+   does change something real, touch only the lines whose facts changed.
+
+5. If you made changes, commit on the current branch (`auto-update`). The
+   permission allowlist matches command prefixes, so phrase the git calls
+   exactly as plain `git add <file>` and `git commit -F -` with the message
+   in a quoted heredoc:
+
+     git commit -a -F - <<'EOF'
+     Subject line
+
+     Body.
+     EOF
+
+   Run them from the worktree (your cwd, where the wrapper started you).
+   These forms are NOT allowlisted and will be denied: `git -C <path> …`
+   (prefix is `git -C`, not `git commit`), compound commands (`cd … &&
+   git commit`), and writing the message to a temp file first (`mktemp`
+   and `cat` are not allowlisted). If a git call comes back "requires
+   approval", re-phrase it into the plain-prefix form above — nothing can
+   approve a prompt in a headless run, so a denied commit otherwise
+   strands the run's work uncommitted. Do NOT create a new branch, switch
+   branches, push, or open a PR. The user merges auto-update into main
+   manually. If nothing changed, exit without committing.
+
+If you hit unexpected errors or changes you can't confidently encode, commit
+your best attempt and note open questions in the commit message.

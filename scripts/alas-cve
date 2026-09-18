@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+# @(#)$KimmoSuominen$
+#
+# Map a CVE to the Amazon Linux advisories that fix it, from the
+# repodata updateinfo.xml.
+#
+# 20260915  Kimmo Suominen
+#
+
+import gzip
+import io
+import os
+import re
+import sys
+import xml.etree.ElementTree as ET
+import zlib
+
+PROG = "alas-cve"
+
+DEFAULT_PATTERN = r"^kernel(\d+\.\d+)?$"
+
+USAGE = """\
+Usage:\t%(prog)s [-h] [-p pattern] cve [file]
+
+List the Amazon Linux advisories whose references name the given CVE,
+one line per advisory and matching package, tab-separated: advisory
+id, issue date, severity, package name, version-release.  Read
+updateinfo.xml (optionally gzip-compressed) from file, or from
+standard input when no file is given or file is "-".  Rows are
+ordered by issue date, so the first row is the earliest fix.
+
+The advisory's own package list is what gets reported.  A line-
+oriented grep over updateinfo.xml pairs one advisory's CVE references
+with its neighbour's package list, because the file packs the end of
+one <update> element and the start of the next on a single line; this
+parses the XML instead.
+
+Exit status is 0 when at least one row is printed, 1 when none is
+(with a note on standard error if advisories did name the CVE but
+none shipped a matching package), and 2 on a usage or input error.
+
+Options:
+-h\tShow this help
+-p\tRegular expression searched for in the package name
+\t(default: %(pattern)s, the kernel stream packages)
+""" % {"prog": PROG, "pattern": DEFAULT_PATTERN}
+
+CVE_RE = re.compile(r"^CVE-\d{4}-\d{4,}$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+class InputError(Exception):
+    """A problem with the input that should end the run with status 2."""
+
+
+def die(message):
+    sys.stderr.write("%s: %s\n" % (PROG, message))
+    sys.exit(2)
+
+
+def usage_error(message):
+    sys.stderr.write("%s: %s\n" % (PROG, message))
+    sys.stderr.write(USAGE)
+    sys.exit(2)
+
+
+def parse_args(argv):
+    pattern = DEFAULT_PATTERN
+    args = list(argv)
+    positional = []
+    while args:
+        arg = args.pop(0)
+        if arg == "--":
+            positional.extend(args)
+            break
+        if arg in ("-h", "--help"):
+            sys.stdout.write(USAGE)
+            sys.exit(0)
+        if arg == "-p":
+            if not args:
+                usage_error("option -p requires an argument")
+            pattern = args.pop(0)
+        elif arg.startswith("-p") and len(arg) > 2:
+            pattern = arg[2:]
+        elif arg.startswith("-") and len(arg) > 1:
+            usage_error("unknown option: %s" % arg)
+        else:
+            positional.append(arg)
+    if len(positional) not in (1, 2):
+        usage_error("expected a CVE id and an optional file")
+    cve = positional[0].upper()
+    if not CVE_RE.match(cve):
+        usage_error("not a CVE id: %s" % positional[0])
+    try:
+        name_re = re.compile(pattern)
+    except re.error as e:
+        usage_error("bad pattern %r: %s" % (pattern, e))
+    path = positional[1] if len(positional) == 2 else None
+    return cve, name_re, pattern, path
+
+
+def open_input(path):
+    """Return (stream, source name); the stream is gunzipped if needed."""
+    if path is None or path == "-":
+        if sys.stdin is None:
+            raise InputError("standard input is closed")
+        stream = sys.stdin.buffer
+        source = "standard input"
+    else:
+        source = path
+        try:
+            stream = open(path, "rb")
+        except OSError as e:
+            raise InputError("cannot read %s: %s" % (path, e.strerror))
+    if not isinstance(stream, io.BufferedReader):
+        stream = io.BufferedReader(stream)
+    if stream.peek(2)[:2] == b"\x1f\x8b":
+        stream = gzip.GzipFile(fileobj=stream)
+    return stream, source
+
+
+def local_name(tag):
+    """Strip any XML namespace from an element tag."""
+    return tag.rsplit("}", 1)[-1]
+
+
+def child(element, name):
+    for e in element:
+        if local_name(e.tag) == name:
+            return e
+    return None
+
+
+def clean(text):
+    """Collapse whitespace so a value cannot break the TSV output."""
+    return " ".join((text or "").split())
+
+
+def references(update, cve):
+    """True when one of the advisory's CVE references is exactly cve."""
+    refs = child(update, "references")
+    if refs is None:
+        return False
+    for e in refs:
+        if (
+            local_name(e.tag) == "reference"
+            and (e.get("type") or "").lower() == "cve"
+            and (e.get("id") or "").upper() == cve
+        ):
+            return True
+    return False
+
+
+def advisory_id(update):
+    e = child(update, "id")
+    if e is None or not clean(e.text):
+        raise InputError("advisory without an <id> element")
+    return clean(e.text)
+
+
+def rows_for(update, name_re):
+    """Yield (issued, advisory, severity, name, version-release)."""
+    advisory = advisory_id(update)
+    issued = child(update, "issued")
+    issued = clean(issued.get("date") if issued is not None else "")
+    if DATE_RE.match(issued):
+        issued = issued[:10]
+    severity = child(update, "severity")
+    severity = clean(severity.text) if severity is not None else ""
+    for e in update.iter():
+        if local_name(e.tag) != "package":
+            continue
+        name = clean(e.get("name"))
+        if not name_re.search(name):
+            continue
+        nvr = "%s-%s" % (clean(e.get("version")), clean(e.get("release")))
+        yield (issued, advisory, severity, name, nvr)
+
+
+def natural(text):
+    """Sort key ordering embedded numbers numerically."""
+    return tuple(
+        int(part) if part.isdigit() else part
+        for part in re.split(r"(\d+)", text)
+    )
+
+
+def scan(stream, source, cve, name_re):
+    """Return (rows, ids of advisories naming cve but adding no row)."""
+    rows = set()
+    filtered = []
+    try:
+        for event, element in ET.iterparse(stream, ("end",)):
+            if local_name(element.tag) != "update":
+                continue
+            if references(element, cve):
+                found = set(rows_for(element, name_re))
+                if found:
+                    rows |= found
+                else:
+                    filtered.append(advisory_id(element))
+            element.clear()
+    except ET.ParseError as e:
+        raise InputError("cannot parse %s: %s" % (source, e))
+    except (OSError, EOFError, zlib.error) as e:
+        raise InputError("cannot read %s: %s" % (source, e))
+    ordered = sorted(
+        rows, key=lambda r: (r[0], natural(r[1]), r[3], natural(r[4]))
+    )
+    return ordered, filtered
+
+
+def emit(rows):
+    try:
+        for issued, advisory, severity, name, nvr in rows:
+            sys.stdout.write(
+                "\t".join((advisory, issued, severity, name, nvr)) + "\n"
+            )
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # The reader went away (e.g. head); leave quietly and keep the
+        # interpreter from complaining again at exit.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+
+
+def run(argv):
+    cve, name_re, pattern, path = parse_args(argv)
+    stream, source = open_input(path)
+    rows, filtered = scan(stream, source, cve, name_re)
+    if rows:
+        emit(rows)
+        return 0
+    if filtered:
+        sys.stderr.write(
+            "%s: %s is named by %s but no package there matches %r\n"
+            % (PROG, cve, ", ".join(filtered), pattern)
+        )
+    return 1
+
+
+def main(argv):
+    try:
+        return run(argv)
+    except InputError as e:
+        die(str(e))
+    except KeyboardInterrupt:
+        return 130
+    except Exception as e:
+        die("internal error: %r" % (e,))
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,5 @@
+- id: published
+  translation: "Published"
+
+- id: last_updated
+  translation: "Last updated"

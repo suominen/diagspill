@@ -1,0 +1,10 @@
+[Unit]
+Description=Run DiagSpill tracker update twice daily
+
+[Timer]
+OnCalendar=*-*-* 06,18:20:00
+Persistent=true
+RandomizedDelaySec=2m
+
+[Install]
+WantedBy=timers.target

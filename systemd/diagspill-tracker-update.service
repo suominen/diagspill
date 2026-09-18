@@ -1,0 +1,58 @@
+[Unit]
+Description=Update DiagSpill tracker via Claude Code
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-%h/.config/claude/headless-token.env
+ExecStart=%h/src/diagspill/scripts/auto-update
+StandardOutput=journal
+StandardError=journal
+
+# Confine the run to what it must write.  The agent is allowed to run
+# curl, and `curl -o` writes wherever this user can write -- including
+# the wrapper in the primary checkout that ExecStart runs -- so the
+# in-wrapper guards are only enforceable with a kernel-level boundary
+# under them.  ProtectSystem=strict makes everything read-only, and
+# each ReadWritePaths below opens the narrowest subtree that still
+# lets the run work: the agent's worktree, and the .git directories
+# git fetch and git commit have to update.  Nothing needs to write a
+# hook or a git config, and both are executable code, so those are
+# handed back as ReadOnlyPaths -- a nested read-only path inside a
+# read-write one wins.  A `-` prefix means "skip if absent" so a
+# missing optional clone does not fail the whole unit.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+# Claude Code writes a per-session file here on every Bash call,
+# so a fully read-only home silently breaks its Bash tool -- the
+# run then reports success having verified nothing.  Grant this
+# one directory rather than all of ~/.claude, which holds the
+# user-level permission settings and plugins.
+ReadWritePaths=%h/.claude/session-env
+# Session transcripts land here (the wrapper runs claude without
+# --no-session-persistence); the write fails silently under a
+# read-only home, so the grant is what makes transcripts actually
+# appear.  Transcript data only -- settings and plugins stay
+# read-only above.
+ReadWritePaths=%h/.claude/projects
+ReadWritePaths=%h/src/auto-update/diagspill
+ReadWritePaths=%h/src/diagspill/.git
+ReadOnlyPaths=%h/src/diagspill/.git/hooks
+ReadOnlyPaths=%h/src/diagspill/.git/config
+ReadWritePaths=-%h/src/linux/stable/.git
+ReadOnlyPaths=-%h/src/linux/stable/.git/hooks
+ReadOnlyPaths=-%h/src/linux/stable/.git/config
+ReadWritePaths=-%h/src/linux/net/.git
+ReadOnlyPaths=-%h/src/linux/net/.git/hooks
+ReadOnlyPaths=-%h/src/linux/net/.git/config
+ReadWritePaths=-%h/src/linux/vulns/.git
+ReadOnlyPaths=-%h/src/linux/vulns/.git/hooks
+ReadOnlyPaths=-%h/src/linux/vulns/.git/config
+ReadWritePaths=-%h/src/nixos/nixpkgs/.git
+ReadOnlyPaths=-%h/src/nixos/nixpkgs/.git/hooks
+ReadOnlyPaths=-%h/src/nixos/nixpkgs/.git/config
+ReadWritePaths=-%h/src/proxmox/pve-kernel/.git
+ReadOnlyPaths=-%h/src/proxmox/pve-kernel/.git/hooks
+ReadOnlyPaths=-%h/src/proxmox/pve-kernel/.git/config

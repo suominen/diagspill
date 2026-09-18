@@ -1,0 +1,21 @@
+{{- /*
+  Overrides PaperMod's default post_meta.html with three changes:
+  - Adds a localized "Published" label before .Date (PaperMod shows it bare).
+  - Adds a localized "Last updated" entry from .Lastmod (PaperMod omits it).
+  - Uses ISO date format (2006-01-02) instead of PaperMod's configurable :date_long.
+  Reading time, word count, and author are intentionally omitted.
+  Labels resolve via site/i18n/<lang>.yaml; English fallbacks are inline.
+*/ -}}
+{{- $scratch := newScratch }}
+
+{{- if not .Date.IsZero -}}
+{{- $scratch.Add "meta" (slice (printf "%s&nbsp;%s" (i18n "published" | default "Published") (.Date | time.Format "2006-01-02"))) }}
+{{- end }}
+
+{{- if not .Lastmod.IsZero -}}
+{{- $scratch.Add "meta" (slice (printf "%s&nbsp;%s" (i18n "last_updated" | default "Last updated") (.Lastmod | time.Format "2006-01-02"))) }}
+{{- end }}
+
+{{- with ($scratch.Get "meta") }}
+{{- delimit . "&nbsp;·&nbsp;" | safeHTML -}}
+{{- end -}}

@@ -1,0 +1,8 @@
+{{- /* Collapsible disclosure for content sections (e.g. the
+       verification log). Goldmark `unsafe` is off, so raw <details>
+       in the Markdown would be stripped; this shortcode emits it and
+       renders the inner Markdown itself. */ -}}
+<details{{ if .Get "open" }} open{{ end }}>
+  <summary>{{ .Get "summary" | default "Details" }}</summary>
+  {{ .Inner | .Page.RenderString (dict "display" "block") }}
+</details>

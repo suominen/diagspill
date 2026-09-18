@@ -1,0 +1,364 @@
+#!/bin/sh
+# Local cron-driven DiagSpill tracker auto-update.
+# Triggered by ~/.config/systemd/user/diagspill-tracker-update.timer.
+# Logs land in the user journal:
+#   journalctl --user -u diagspill-tracker-update
+#
+# Executed from the primary checkout (~/src/diagspill), which carries
+# only reviewed, merged code. It drives the dedicated worktree at
+# ~/src/auto-update/diagspill, checked out on branch `auto-update`:
+# each run merges origin/main forward into that branch and lets
+# headless Claude commit any updates back onto auto-update only.
+# Merges of auto-update -> main are manual.
+#
+# Running the copy inside the worktree instead would hand the agent
+# its own wrapper: it can commit to `auto-update`, so anything written
+# there executes on the next run, as this user, outside Claude Code's
+# permission scoping. Keeping the code that runs (CODE) and the tree
+# the agent writes (WORKTREE) strictly apart is what prevents that, so
+# the guards below refuse to run if the two ever coincide.
+#
+# The worktree path can be overridden by argument, for testing against
+# a scratch checkout.
+#
+# One wrapper serves both tracker kinds. MODE below is seeded per
+# tracker: kernel reads the ~/src/linux/* kernel clones (plus nixpkgs
+# and pve-kernel); package reads the distro package clones (nixpkgs
+# and pkgsrc).
+
+set -eu
+# pipefail so a failure on the left of the final prompt|claude
+# pipeline (e.g. the prompt file turning unreadable mid-run) fails
+# the unit instead of feeding claude a preamble-only prompt.
+set -o pipefail
+
+PROG="${0##*/}"
+
+# Which clone set to refresh and which mode-only tools to allowlist.
+# Seeded per tracker from the template; an unrecognised value
+# fails the check below.
+MODE='kernel'
+
+case "${MODE}" in
+kernel|package)
+  ;;
+*)
+  echo "${PROG}: MODE must be 'kernel' or 'package' (got '${MODE}')" 1>&2
+  exit 1
+  ;;
+esac
+
+CODE="$(realpath "$(dirname "${0}")/..")"
+SLUG="${CODE##*/}"
+WORKTREE="${1:-${HOME}/src/auto-update/${SLUG}}"
+
+if [ ! -d "${WORKTREE}/.git" ] && [ ! -f "${WORKTREE}/.git" ]
+then
+  echo "${PROG}: no git worktree at ${WORKTREE}" 1>&2
+  exit 1
+fi
+
+if [ "$(realpath "${WORKTREE}")" = "${CODE}" ]
+then
+  echo "${PROG}: refusing to run from the agent-writable worktree;" \
+       'invoke scripts/auto-update from the primary checkout' 1>&2
+  exit 1
+fi
+
+cd "${WORKTREE}"
+
+# Identify this tracker on the first line of every run, so syslog
+# summaries that aggregate several trackers' output (all logged under
+# the generic `auto-update` process name) can be told apart.
+echo "DiagSpill tracker auto-update starting ($(date -u +%FT%TZ))"
+
+# Refresh the local clones the agent reads via origin/... refs.
+# Doing this here, rather than in the prompt, makes the refresh
+# deterministic — a headless agent occasionally skips these and
+# then reports findings against stale remote-tracking refs (e.g. a
+# nixos channel pointer advancing past the local nixpkgs clone).
+#
+# The tracker jobs run minutes apart and share these clones, so
+# skip a clone any of them refreshed within the last 2 hours. git
+# touches .git/FETCH_HEAD on every fetch, even a no-op one, so its
+# mtime is "when we last checked"; a clone never fetched has no
+# FETCH_HEAD and counts as stale, and a failed fetch leaves it
+# untouched, so the next job retries instead of skipping.
+fetch_if_stale()
+{
+  local repo label
+  repo="${1}"
+  label="${2}"
+  shift 2
+
+  if [ -n "$(find "${repo}/.git/FETCH_HEAD" -mmin -120 2>/dev/null)" ]
+  then
+    echo "Skipping ${label} fetch (refreshed within 2 hours)"
+    return 0
+  fi
+  git -C "${repo}" fetch --quiet "${@}" ||
+    echo "${PROG}: warn: ${label} fetch failed" 1>&2
+}
+
+# nixpkgs: the channel package pins for the NixOS rows, and the
+# history scripts/nixos-first-shipped resolves release revisions
+# against. Both tracker kinds read it.
+fetch_if_stale "${HOME}/src/nixos/nixpkgs" nixpkgs origin
+
+case "${MODE}" in
+kernel)
+  fetch_if_stale "${HOME}/src/linux/stable" linux-stable --all --tags
+  # net: the netdev "net" tree, where networking fixes (SCTP among them)
+  # land and get tagged for stable before they reach Linus. Handy for
+  # confirming a backport's provenance early.
+  fetch_if_stale "${HOME}/src/linux/net" linux-net origin
+  # vulns: the kernel CVE -> fix-commit / fixed-version database. Keeps the
+  # per-branch dyad lookup for CVE-2026-74469 fresh.
+  fetch_if_stale "${HOME}/src/linux/vulns" linux-vulns origin
+  # pve-kernel: Proxmox's kernel packaging repo, where every security
+  # cherry-pick is listed by name/CVE in debian/changelog. Shared like
+  # the others, so the agent reads it via origin/... refs instead of
+  # cloning it per run into the worktree.
+  fetch_if_stale "${HOME}/src/proxmox/pve-kernel" pve-kernel origin
+  ;;
+package)
+  # pkgsrc: DISTNAME / PKGREVISION / patches on trunk and the current
+  # quarterly branch. Drop this if the tracker has no pkgsrc rows.
+  fetch_if_stale "${HOME}/src/netbsd/pkgsrc" pkgsrc origin
+  ;;
+esac
+
+git fetch --quiet origin
+
+# Clear any scratch a previous run's agent left behind. Untracked
+# debris trips the dirty-tree check below, and every later run then
+# refuses to start until someone removes it by hand -- a silent
+# stall. git clean catches any name (a bare glob would miss
+# arbitrarily-named curl -o leftovers) while leaving ignored files
+# and modified tracked files alone, so an interrupted run still
+# stops at the dirty-tree check for a human to look at.
+git clean -fd
+
+if [ -n "$(git status --porcelain)" ]
+then
+  echo 'Working tree dirty; refusing to run. Clean it up and retry.' 1>&2
+  exit 1
+fi
+
+git switch --quiet auto-update
+git merge --quiet --no-edit origin/main
+
+# Everything the agent can commit to `auto-update` is untrusted input,
+# including any file that would later run as code or grant permissions.
+# The wrapper and the prompt are read from CODE rather than from here,
+# and the run is refused outright if the merged worktree's executable
+# surface differs from origin/main. Diffing the working tree (not just
+# HEAD) covers a committed edit and an uncommitted one alike. CLAUDE.md
+# is in that surface because the agent loads it as project
+# instructions, and .mcp.json because it can name commands to run.
+#
+# A refusal is a stop-and-look, not a transient: it means something
+# rewrote code on the branch that only the tracker content should
+# reach. Inspect the diff before clearing it.
+if ! git diff --quiet origin/main -- scripts .claude CLAUDE.md .mcp.json
+then
+  echo 'Worktree code/config differs from origin/main; refusing to' \
+       'run. Inspect it:' 1>&2
+  echo "  git -C ${WORKTREE} diff origin/main --" \
+       'scripts .claude CLAUDE.md .mcp.json' 1>&2
+  exit 1
+fi
+
+# Headless run. Permission scope (Read/Edit the tracker, WebFetch and
+# curl the sources, grep/sort/jq to sift them, tee and rm for scratch
+# files, the read-only lookup helpers in scripts/, git + date for the
+# commit step) goes in --settings JSON because
+# --allowed-tools on the CLI silently ignores Bash patterns.
+# `default` mode under -p with no TTY refuses anything outside the
+# allowlist without prompting.
+#
+# The git rules are enumerated per subcommand rather than `git:*` on
+# purpose: publishing is a breakpoint that needs a human. Read-only
+# git commands are auto-classified as safe and run either way, but a
+# mutating one needs a matching rule -- so with no rule for it, the
+# permission system refuses to publish, rather than that resting on
+# prose in the prompt. `gh` is absent for the same reason, so no PR
+# can be opened either.
+#
+# Scratch files live in the worktree: Claude Code confines Bash file
+# reads to the session working directory, so /tmp scratch can be
+# written but never read back. rm is allowlisted so the agent can
+# remove its own scratch before committing; Claude Code confines rm
+# the same way, so the grant cannot touch the shared clones or
+# anything else outside the worktree. The git clean above sweeps
+# any scratch files a run forgets.
+#
+# Writing a scratch file takes curl -o or tee: Claude Code refuses
+# every `> file` redirection into the worktree -- the refusal names
+# the worktree as the one allowed directory and blocks anyway (a
+# Claude Code bug, seen on 2.1.241 through 2.1.247). tee is
+# allowlisted for that. Unlike rm and the file readers (grep, sort,
+# jq, cat, head -- all probe-verified to refuse a path outside the
+# worktree even under an explicit rule), tee's target is not
+# confined: it wrote outside the cwd. So, like `curl -o`, it can
+# write anywhere this user can -- the worktree's own
+# .claude/settings.json included, with self-composed content --
+# and rests on the unit sandbox (ProtectHome=read-only plus
+# ReadWritePaths), not on the permission system. A manual run with
+# a WORKTREE argument has no unit sandbox under it, so there tee
+# and curl -o are unbounded. `sort -o FILE` is a write path on the
+# same footing.
+#
+# The deny rules keep the agent from rewriting its own executable
+# surface mid-run; the guard above only sees the tree as it stood at
+# the start. Only Edit(...) rules apply to file writes -- a Write(...)
+# rule is ignored (Claude Code warns when one is present).
+#
+# The verification recipes live in scripts/ rather than as inline
+# pipelines, which keeps awk and sed out of the allowlist too. grep
+# and sort are allowlisted even though Claude Code auto-classifies
+# both as read-only: the classifier gives up on an argument holding
+# a `$`, a `\{n\}` interval, or an embedded quote -- `grep '^Package:
+# x$'`, `sort -t'"' -k4 -V`, exactly the shapes the recipes use --
+# and refuses the whole pipeline; an explicit rule overrides it
+# (probe-verified on 2.1.247). jq is a read-only filter the wrapper
+# already depends on; without it the agent burns retries on python3
+# and awk against the JSON feeds. All three keep Claude Code's
+# read confinement to the worktree under the explicit rule.
+#
+# Those helpers are the one thing the agent both runs and could write,
+# so they are invoked from CODE, never from the worktree. An Edit deny
+# rule alone would not hold: `curl -o` writes a file without going
+# through any file-editing tool. Allowlisting only the CODE path means
+# a worktree copy is not runnable even if something overwrites it.
+# The rule and the path handed to the agent are the same string, so
+# they cannot drift apart.
+HELPERS="${CODE}/scripts"
+
+# The core allowlist in the settings heredoc below is shared;
+# mode_tools adds only what this tracker kind's lookup recipes need.
+case "${MODE}" in
+kernel)
+  # zcat/gunzip unpack the gzipped repodata and Packages indexes,
+  # alas-cve maps a CVE to the Amazon Linux advisories that fix it
+  # (updateinfo.xml is not line-safe for grep), and git describe maps
+  # a fix commit to the release that carries it -- kernel-side lookups
+  # package mode does not need.
+  #
+  # The pve-kernel branch-listing rules cover the one `git -C` read
+  # the project settings have no rule for: nothing behind `git -C` is
+  # auto-classified read-only (see the settings assembly below), and
+  # a bare `Bash(git branch:*)` rule never matches the `git -C` form
+  # -- matching is a literal prefix on the command the agent types.
+  # The `-r` stays in the rule so mutating `git branch` forms remain
+  # refused, and the two home-directory spellings cover the phrasings
+  # the recipes use; any other spelling fails closed. A heredoc, not
+  # a single-quoted literal, so ${HOME} expands in the second rule.
+  mode_tools="$(cat << EOF
+    "Bash(zcat:*)",
+    "Bash(gunzip:*)",
+    "Bash(${HELPERS}/alas-cve:*)",
+    "Bash(git describe:*)",
+    "Bash(git -C ~/src/proxmox/pve-kernel branch -r:*)",
+    "Bash(git -C ${HOME}/src/proxmox/pve-kernel branch -r:*)"
+EOF
+)"
+  ;;
+package)
+  # nixpkgs-versions / pkgsrc-versions are the package-side lookup
+  # helpers, and git ls-tree / cat-file / merge-base back their
+  # revision lookups -- package-side needs kernel mode does not have.
+  # A heredoc, not a single-quoted literal, so ${HELPERS} expands here:
+  # the outer settings heredoc would not re-expand it, and the rule
+  # would never match the path the preamble hands the agent.
+  mode_tools="$(cat << EOF
+    "Bash(${HELPERS}/nixpkgs-versions:*)",
+    "Bash(${HELPERS}/pkgsrc-versions:*)",
+    "Bash(git ls-tree:*)",
+    "Bash(git cat-file:*)",
+    "Bash(git merge-base:*)"
+EOF
+)"
+  ;;
+esac
+
+# Claude Code matches a Bash rule as a literal prefix of the command
+# the agent types, and never auto-approves `git -C <dir> ...` as
+# read-only in any spelling (probe-verified on 2.1.247), so the
+# project settings' `git -C ~/src/...` rules cover only the tilde
+# spelling. The agent writes the absolute path about half the time
+# and was then refused every clone read in a run -- the pve-kernel
+# `branch -r` pair above spells both by hand for the same reason.
+# Emit every such rule in both spellings, read from CODE's settings
+# (reviewed code), never from the worktree copy the agent can
+# rewrite. Carrying the tilde spelling here too keeps the run from
+# depending on the worktree having been trusted interactively:
+# Claude Code ignores an untrusted workspace's project settings
+# (with a warning), but applies --settings regardless. A settings
+# file without permissions.allow fails the run here, on purpose --
+# better than a session in which every clone read is refused.
+settings="$(jq -c --arg home "${HOME}" \
+    --slurpfile proj "${CODE}/.claude/settings.json" '
+  .permissions.allow += [
+    $proj[0].permissions.allow[]
+    | select(startswith("Bash(git -C ~/"))
+    | ., sub("~/"; $home + "/")
+  ]' << EOF
+  {
+    "permissions": {
+      "allow": [
+	"Read",
+	"Edit",
+	"WebFetch",
+	"Bash(date:*)",
+	"Bash(rm:*)",
+	"Bash(curl:*)",
+	"Bash(grep:*)",
+	"Bash(sort:*)",
+	"Bash(jq:*)",
+	"Bash(tee:*)",
+	"Bash(${HELPERS}/nixos-first-shipped:*)",
+	"Bash(git add:*)",
+	"Bash(git commit:*)",
+	"Bash(git diff:*)",
+	"Bash(git log:*)",
+	"Bash(git show:*)",
+	"Bash(git status:*)",
+	${mode_tools}
+      ],
+      "deny": [
+	"Edit(./scripts/**)",
+	"Edit(./.claude/**)"
+      ]
+    }
+  }
+EOF
+)"
+
+# The prompt keeps saying ./scripts/<helper>; the preamble redirects
+# those to CODE without every recipe in it having to spell out a path
+# that only exists at run time.
+if [ ! -r "${CODE}/scripts/auto-update-prompt.txt" ]
+then
+  echo "${PROG}: cannot read ${CODE}/scripts/auto-update-prompt.txt" 1>&2
+  exit 1
+fi
+
+{
+  echo "The verification helpers this prompt calls ./scripts/<helper>"
+  echo "live in ${HELPERS}. Invoke each one by that absolute path"
+  echo "(${HELPERS}/<helper>); the worktree copies are not permitted."
+  echo
+  cat "${CODE}/scripts/auto-update-prompt.txt"
+} |
+# Session transcripts are kept: each run's session lands under
+# ~/.claude/projects/<worktree-slug>/ and is the only per-command
+# record of what the permission system allowed or denied -- the
+# journal carries just the agent's final summary. The user-level
+# cleanupPeriodDays setting prunes them.
+claude -p \
+  --model claude-sonnet-5 \
+  --permission-mode default \
+  --settings "${settings}" \
+  --output-format text \
+  --max-budget-usd 3

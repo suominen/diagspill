@@ -1,0 +1,160 @@
+<script>
+    // Distribution-status tables: replace the Distribution column with
+    // full-width group heading rows, one per distribution. Markdown
+    // tables can't express colspan, so the source keeps a plain
+    // Distribution column and this transform runs in the browser; with
+    // JavaScript disabled the table renders as authored, with the
+    // Distribution column visible and repeated.
+    document.querySelectorAll('.post-content table.distros').forEach((table) => {
+        const body = table.tBodies[0];
+        const headRow = table.tHead?.rows[0];
+        if (!body || !headRow || headRow.cells.length < 2) return;
+        const span = headRow.cells.length - 1;
+        headRow.cells[0].remove();
+        let group = null;
+        for (const row of Array.from(body.rows)) {
+            const cell = row.cells[0];
+            if (!cell) continue;
+            const name = cell.textContent.trim();
+            if (name !== group) {
+                group = name;
+                const th = document.createElement('th');
+                th.colSpan = span;
+                th.scope = 'colgroup';
+                th.textContent = name;
+                const tr = document.createElement('tr');
+                tr.classList.add('distro-group');
+                tr.appendChild(th);
+                body.insertBefore(tr, row);
+            }
+            cell.remove();
+        }
+        // Publish the header row's height so custom.css can stick the
+        // group heading rows directly below the stuck column header;
+        // re-measure when the table resizes (font or zoom changes can
+        // move the header height).
+        const setHeadH = () => table.style.setProperty(
+            '--distros-thead-h',
+            headRow.getBoundingClientRect().height + 'px');
+        setHeadH();
+        new ResizeObserver(setHeadH).observe(table);
+    });
+
+    // Other tables: collapse consecutive duplicate first-column cells
+    // into a rowSpan.
+    document.querySelectorAll('.post-content table:not(.distros)').forEach((table) => {
+        const rows = table.tBodies[0]?.rows;
+        if (!rows || rows.length < 2) return;
+        let anchor = rows[0].cells[0];
+        if (!anchor) return;
+        let span = 1;
+        for (let i = 1; i < rows.length; i++) {
+            const cell = rows[i].cells[0];
+            if (!cell) continue;
+            if (cell.textContent.trim() === anchor.textContent.trim()) {
+                cell.remove();
+                span += 1;
+                anchor.rowSpan = span;
+            } else {
+                anchor = cell;
+                span = 1;
+            }
+        }
+    });
+
+    // Tag status cells — those whose text starts with a status emoji —
+    // so custom.css can give them a hanging indent. The emoji then stays
+    // in a clean left gutter and wrapped text indents past it, instead of
+    // wrapping back under the emoji.
+    document.querySelectorAll('.post-content table td').forEach((cell) => {
+        if (/^\s*[✅❌❔⚠➖]/.test(cell.textContent)) {
+            cell.classList.add('status');
+        }
+    });
+</script>
+
+{{- if (.Param "ShowCodeCopyButtons") }}
+<script>
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function makeSvgIcon(type) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('width', '14');
+        svg.setAttribute('height', '14');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', type === 'copy' ? '2' : '2.5');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        svg.setAttribute('aria-hidden', 'true');
+
+        if (type === 'copy') {
+            const rect = document.createElementNS(SVG_NS, 'rect');
+            rect.setAttribute('x', '9'); rect.setAttribute('y', '2');
+            rect.setAttribute('width', '13'); rect.setAttribute('height', '13');
+            rect.setAttribute('rx', '2'); rect.setAttribute('ry', '2');
+            svg.appendChild(rect);
+            const path = document.createElementNS(SVG_NS, 'path');
+            path.setAttribute('d', 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1');
+            svg.appendChild(path);
+        } else {
+            const poly = document.createElementNS(SVG_NS, 'polyline');
+            poly.setAttribute('points', '20 6 9 17 4 12');
+            svg.appendChild(poly);
+        }
+        return svg;
+    }
+
+    function setButtonState(btn, state) {
+        const label = state === 'copy'
+            ? '{{- i18n "code_copy" | default "Copy code" }}'
+            : '{{- i18n "code_copied" | default "Copied!" }}';
+        btn.replaceChildren(makeSvgIcon(state));
+        btn.title = label;
+        btn.setAttribute('aria-label', label);
+    }
+
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        setButtonState(copybutton, 'copy');
+
+        function copyingDone() {
+            setButtonState(copybutton, 'copied');
+            setTimeout(() => setButtonState(copybutton, 'copy'), 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            // td containing LineNos
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+{{- end }}

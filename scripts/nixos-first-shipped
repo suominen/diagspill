@@ -1,0 +1,278 @@
+#!/bin/sh
+# @(#)$KimmoSuominen$
+#
+# Report when a NixOS or nixpkgs channel first published a release
+# containing a given nixpkgs commit.
+#
+# 20260721  Kimmo Suominen
+#
+
+set -eu
+
+PATH=/bin:/usr/bin:/usr/local/bin
+export PATH
+
+PROG="${0##*/}"
+
+BUCKET='https://nix-releases.s3.amazonaws.com'
+NIXPKGS="${HOME}/src/nixos/nixpkgs"
+
+die()
+{
+    echo "${PROG}: ${*}" 1>&2
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage:	${PROG} [-h] [-r repo] channel commit
+
+Report the date a NixOS or nixpkgs channel first published a release
+whose nixpkgs revision contains the given commit, and the name of that
+release. Output is tab-separated: channel, release, date.
+
+This is the "Fixed since" date for a channel row in a patch-status
+tracker: the day the fix actually became available on the channel, not
+the day it was noticed. The channel's published releases are listed
+from the nix-releases bucket and the earliest one whose revision is a
+descendant of the commit is reported.
+
+Note that a release-branch channel (nixos-26.05) ships the backport
+commit from its release-NN.NN branch, not the commit on master.
+
+The local nixpkgs clone must already contain the commit and the
+release revisions; fetch it first if the answer looks too late.
+
+Options:
+-h	Show this help
+-r	Path to the local nixpkgs clone (default: ${NIXPKGS})
+EOF
+}
+
+# Print the S3 key prefix under which a channel publishes releases.
+channel_prefix()
+{
+    local channel
+    channel="${1}"
+
+    case "${channel}" in
+    nixpkgs-unstable)
+	# The only channel published at the top of the nixpkgs
+	# prefix; every other nixpkgs-* channel (the -darwin ones)
+	# has a prefix of its own.
+	echo 'nixpkgs/'
+	;;
+    nixpkgs-*)
+	echo "nixpkgs/${channel#nixpkgs-}/"
+	;;
+    nixos-*)
+	echo "nixos/${channel#nixos-}/"
+	;;
+    *)
+	die "Unknown channel: ${channel}"
+	;;
+    esac
+}
+
+# List a prefix's release directories to stdout, oldest first.
+#
+# The bucket pages at 1000 keys, so follow NextMarker to the end.
+# Releases are named <name>.<revision>, where <name> ends in a number
+# that counts up over the channel's life: the nixpkgs revision count
+# for the rolling channels (nixos-26.11pre1036777), commits since the
+# branch point for a release channel (nixos-26.05.5449), and for a
+# pre-release either of those (nixos-25.05beta708622 is a revision
+# count; nixos-26.05beta1 is an ordinal). Sorting on that number
+# recovers release order -- and hence ancestry order, which is what
+# the caller's binary search relies on. The caller validates that
+# assumption rather than trusting it, because a handful of very old
+# entries were published under the wrong prefix.
+#
+# Anything whose trailing field is not a git revision is skipped: the
+# oldest entries under nixos/ and nixpkgs/ predate the naming scheme,
+# and the nixpkgs prefix also lists its -darwin sub-channels here.
+list_releases()
+{
+    local prefix work marker page
+
+    prefix="${1}"
+    work="${2}"
+
+    page="${work}/page.xml"
+    marker=
+    : > "${work}/names"
+
+    while :
+    do
+	curl -fsSL "${BUCKET}/?delimiter=/&prefix=${prefix}&marker=${marker}" \
+	    -o "${page}" ||
+	    die "Cannot list ${prefix}"
+
+	tr '<' '\n' < "${page}" |
+	sed -n "s,^Prefix>${prefix}\(.*\)/\$,\1,p" >> "${work}/names"
+
+	case "$(tr '<' '\n' < "${page}" | sed -n 's,^IsTruncated>,,p')" in
+	true)	;;
+	*)	break;;
+	esac
+
+	marker="$(tr '<' '\n' < "${page}" | sed -n 's,^NextMarker>,,p')"
+
+	if [ -z "${marker}" ]
+	then
+	    break
+	fi
+    done
+
+    awk '
+	{
+	    dir = $0
+	    n = split(dir, part, ".")
+	    rev = part[n]
+	    if (rev !~ /^[0-9a-f]{7,40}$/)
+		next
+
+	    name = substr(dir, 1, length(dir) - length(rev) - 1)
+
+	    count = name
+	    sub(/^.*[^0-9]/, "", count)
+	    if (count == "")
+		next
+
+	    print count, dir
+	}
+    ' "${work}/names" |
+    sort -k1,1n |
+    cut -d' ' -f2
+}
+
+# Succeed when a release was built from a revision that already
+# contains the commit.
+release_contains()
+{
+    local dir commit rev
+    dir="${1}"
+    commit="${2}"
+    rev="${dir##*.}"
+
+    git -C "${NIXPKGS}" cat-file -e "${rev}^{commit}" 2> /dev/null ||
+	die "Revision ${rev} of release ${dir} is not in ${NIXPKGS};" \
+	    'fetch the clone and retry'
+
+    git -C "${NIXPKGS}" merge-base --is-ancestor "${commit}" "${rev}"
+}
+
+# Print the publication date of a release, as recorded by the bucket
+# for that release's git-revision key.
+release_date()
+{
+    local dir prefix date
+    dir="${1}"
+    prefix="${2}"
+
+    date="$(curl -fsSL "${BUCKET}/?prefix=${prefix}${dir}/git-revision" |
+	tr '<' '\n' |
+	sed -n 's,^LastModified>\(.*\)T.*,\1,p')" ||
+	die "Cannot read the publication date of ${dir}"
+
+    if [ -z "${date}" ]
+    then
+	die "No publication date recorded for ${dir}"
+    fi
+
+    echo "${date}"
+}
+
+while getopts hr: opt
+do
+    case "${opt}" in
+    h)  usage; exit 0;;
+    r)  NIXPKGS="${OPTARG}";;
+    *)  usage 1>&2; exit 2;;
+    esac
+done
+shift $((${OPTIND} - 1))
+
+if [ $# -ne 2 ]
+then
+    usage 1>&2
+    exit 2
+fi
+
+channel="${1}"
+commit="${2}"
+
+command -v curl > /dev/null ||
+    die 'curl is required'
+
+command -v git > /dev/null ||
+    die 'git is required'
+
+[ -d "${NIXPKGS}/.git" ] ||
+    die "Not a git clone: ${NIXPKGS}"
+
+git -C "${NIXPKGS}" cat-file -e "${commit}^{commit}" 2> /dev/null ||
+    die "Commit ${commit} is not in ${NIXPKGS}"
+
+prefix="$(channel_prefix "${channel}")"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "${tmp}"' EXIT INT TERM HUP
+
+list_releases "${prefix}" "${tmp}" > "${tmp}/releases"
+
+count=$(($(wc -l < "${tmp}/releases")))
+
+if [ "${count}" -eq 0 ]
+then
+    die "No releases listed under ${prefix}"
+fi
+
+# Containment is monotonic along the release order -- channel releases
+# form an ancestry chain -- so binary search for the first release that
+# has the commit rather than walking every one of them.
+if ! release_contains "$(sed -n "${count}p" "${tmp}/releases")" "${commit}"
+then
+    die "No ${channel} release contains ${commit} yet"
+fi
+
+lo=1
+hi="${count}"
+
+while [ "${lo}" -lt "${hi}" ]
+do
+    mid=$(((lo + hi) / 2))
+
+    if release_contains "$(sed -n "${mid}p" "${tmp}/releases")" "${commit}"
+    then
+	hi="${mid}"
+    else
+	lo=$((mid + 1))
+    fi
+done
+
+# Validate the monotonicity the binary search assumed: the release
+# just before the answer must NOT contain the commit. A handful of
+# very old entries sit under a prefix they do not belong to, and one
+# of those out of order would silently skew the search, so fall back
+# to a linear scan rather than report a date that cannot be trusted.
+if [ "${lo}" -gt 1 ] &&
+   release_contains "$(sed -n "$((lo - 1))p" "${tmp}/releases")" "${commit}"
+then
+    echo "${PROG}: warn: release order is not monotonic here;" \
+	'falling back to a linear scan' 1>&2
+
+    lo=1
+    while [ "${lo}" -le "${count}" ]
+    do
+	release_contains "$(sed -n "${lo}p" "${tmp}/releases")" "${commit}" &&
+	    break
+	lo=$((lo + 1))
+    done
+fi
+
+first="$(sed -n "${lo}p" "${tmp}/releases")"
+date="$(release_date "${first}" "${prefix}")"
+
+printf '%s\t%s\t%s\n' "${channel}" "${first}" "${date}"
