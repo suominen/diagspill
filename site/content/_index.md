@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-18
+lastmod: 2026-09-19
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -122,7 +122,7 @@ carries the fix, and stay `—` until then.
 | Debian | 13 (trixie) | 6.12.107-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
 | Debian | 12 (6.12 opt-in) | 6.12.107-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
-| Proxmox VE | 9 (default) | 7.0.14-17-pve | — | — | :x: Vulnerable |
+| Proxmox VE | 9 (default) | 7.0.14-17-pve | — | — | :warning: Staged — fix in git, unshipped |
 | Proxmox VE | 8 (default) | 6.8.12-43-pve | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
 | Proxmox VE | 8 (6.14 opt-in) | 6.14.11-9~bpo12+1 | — | — | :x: Vulnerable |
 | NixOS | master | 6.18.52 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
@@ -135,9 +135,9 @@ carries the fix, and stay `—` until then.
 | Rocky Linux / RHEL | 10 | 6.12.0-211.55.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 9 | 5.14.0-687.48.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 8 | 4.18.0-553.163.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
-| Amazon Linux | 2023 (default) | 6.1.186-228.374 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
-| Amazon Linux | 2023 (6.12 opt-in) | 6.12.103-127.188 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
-| Amazon Linux | 2023 (6.18 opt-in) | 6.18.48-107.148 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
+| Amazon Linux | 2023 (default) | 6.1.186-228.376 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
+| Amazon Linux | 2023 (6.12 opt-in) | 6.12.103-129.197 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
+| Amazon Linux | 2023 (6.18 opt-in) | 6.18.48-109.150 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
 {.distros}
 
 ### Linux kernel
@@ -203,13 +203,16 @@ Proxmox ships its own kernels, so Debian's status does not carry over.
 kernel carries SCTP and received the cherry-pick, so a pre-fix Proxmox
 series is not safe by base version alone.
 
-**PVE 9's `proxmox-kernel-7.0`** is **not yet fixed**. It carries no named
-DiagSpill cherry-pick, and its fix would have to arrive inside an Ubuntu
-7.0 base rebase — but Ubuntu's own 7.0 (resolute) fix is still *pending*,
-not released, and the current `pve-no-subscription` build's Ubuntu base
-predates the 7.1.8 stable point that first carries the fix. This row stays
-vulnerable until a cherry-pick lands or the Ubuntu base advances past the
-fix.
+**PVE 9's `proxmox-kernel-7.0`** is **staged, not yet shipped**. The
+published `pve-no-subscription` build rebases Ubuntu-7.0.0-38.38, whose
+stable content reaches only **7.1.7** — one release short of the 7.1
+branch's `7.1.8` first fix — and carries no named DiagSpill cherry-pick.
+The pve-kernel git tree has since moved past that point: an unreleased
+changelog entry syncs the Ubuntu submodule through upstream stable
+**7.1.8–7.1.13**, spanning the fix, but Ubuntu's own resolute advisory
+for this CVE is still *pending* and the newer build has not reached
+`pve-no-subscription`. The row stays vulnerable in practice until the
+fix ships in a published build.
 
 PVE 8 additionally offers `proxmox-kernel-6.14` as a `bookworm-backports`
 opt-in for newer hardware support. It is **vulnerable**: its Ubuntu base
@@ -480,12 +483,14 @@ readers never need it.
     (changelog dated 2026-08-18); `pve-no-subscription` publishes
     `proxmox-kernel-6.8.12-43-pve`. `proxmox-default-kernel` on bookworm
     depends on `proxmox-kernel-6.8`.
-  - PVE 9 `proxmox-kernel-7.0` carries no DiagSpill cherry-pick (no such
-    patch in the `master` tree); its fix would arrive via the Ubuntu 7.0
-    base, but Ubuntu's 7.0 (resolute) status is `pending`, and the current
-    `pve-no-subscription` build `7.0.14-17-pve` rebases Ubuntu-7.0.0-38.38,
-    whose stable content predates the 7.1.8 fix. `proxmox-default-kernel`
-    on trixie depends on `proxmox-kernel-7.0`.
+  - PVE 9 `proxmox-kernel-7.0`: the published `pve-no-subscription` build
+    `7.0.14-17-pve` rebases Ubuntu-7.0.0-38.38, stable content through
+    7.1.7 only, no named cherry-pick. Ubuntu's own resolute status for
+    CVE-2026-74469 is `pending` (`ubuntu.com/security/cves` JSON, no
+    released version). An unreleased changelog entry (dated 2026-09-17,
+    not yet in `pve-no-subscription`) syncs the Ubuntu submodule through
+    upstream stable 7.1.8-7.1.13, spanning the branch's first fix.
+    `proxmox-default-kernel` on trixie depends on `proxmox-kernel-7.0`.
   - PVE 8 `proxmox-kernel-6.14` opt-in (`bookworm-6.14`, source
     `bookworm-backports`): newest `6.14.11-9~bpo12+1` (2026-05-15), no SCTP
     cherry-pick; per Ubuntu's CVE tracker `linux-hwe-6.14` on noble is
