@@ -8,12 +8,14 @@ config strings differ.
 ## Architecture
 
 - **Source repo:** `github.com/suominen/diagspill` (this repo).
-- **Generator:** Hugo extended, ≥ 0.146.0. Run locally; nothing built in CI.
+- **Generator:** Hugo ≥ 0.146.0 (standard edition). Run locally; nothing
+  built in CI.
 - **Source layout:** Hugo project under `site/`; the tracker is a single
   page at `site/content/_index.md`.
 - **Theme:** PaperMod, integrated as a Hugo Module (no submodule).
-- **Dev environment:** Nix flake (`flake.nix`) provides hugo + go + git +
-  resvg + curl/libarchive/zstd. Auto-activates via `.envrc` with direnv.
+- **Dev environment:** Nix flake (`flake.nix`) provides everything the
+  build, banner, publish, and lookup recipes call (Claude Code itself
+  excepted). Auto-activates via `.envrc` with direnv.
 - **Build:** `make build` → `hugo --minify --gc --cleanDestinationDir`.
 - **Publish:** `make dist` → `rsync -avz --delete site/public/` →
   `haig:/diagspill/`.

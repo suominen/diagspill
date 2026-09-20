@@ -26,11 +26,12 @@ Deployment plan and current setup state live in [`WEBSITE.md`](WEBSITE.md).
 
 ## Local development
 
-Requires Hugo extended (≥ 0.146.0) and Go (for Hugo Modules to fetch the
-PaperMod theme).
+Requires Hugo ≥ 0.146.0 (the standard edition suffices: no Sass or image
+processing in this site) and Go (for Hugo Modules to fetch the PaperMod
+theme).
 
 ```sh
-nix develop          # dev shell: hugo, go, git, resvg
+nix develop          # dev shell: hugo, go, resvg + fonts, and every lookup tool
 cd site
 hugo server          # local preview at http://localhost:1313/diagspill/
 ```
@@ -43,7 +44,7 @@ shell auto-activates whenever you `cd` into the repo.
 ```sh
 make build       # local build into site/public/
 make dist        # build, then rsync to haig:/diagspill/
-make banner      # re-rasterise the social banner SVG → PNG (needs resvg + Roboto)
+make banner      # re-rasterise the social banner SVG → PNG (needs resvg + the banner fonts)
 ```
 
 `make dist` runs `make build` first. `make banner` is only needed after

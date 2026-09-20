@@ -338,10 +338,22 @@ leave the file alone and don't commit — don't bump `lastmod`.
 
 ## Build environment
 
-- Hugo extended **≥ 0.146.0** (PaperMod's minimum). Debian apt is too old.
-- Go (any recent version) — for Hugo Modules to pull PaperMod.
-- The Nix flake provides both: `nix develop` (or `cd` in if direnv is set
-  up). `hugo`, `go`, and `resvg` may also already be on `PATH`.
+- Hugo **≥ 0.146.0** (PaperMod's minimum); the standard edition
+  suffices — no Sass or image processing in this site. Debian apt is
+  too old: `go install github.com/gohugoio/hugo@latest`, kept current
+  with `gup update` (see `~/src/cve-tracker-template/NEW-TRACKER.md`
+  § "Host prerequisites (Debian)").
+- Go (any recent version) — for Hugo Modules to pull PaperMod, and to
+  build Hugo itself.
+- `xq` (Debian package `xq`) on the auto-update host — the Rocky
+  changelog cross-check queries `other.xml.gz` with it.
+- `rpmsort` (Debian package `rpm`) on the auto-update host — orders
+  EL kernel builds by RPM rules for the Rocky rows.
+- The Nix flake provides all of these for an interactive shell:
+  `nix develop` (or `cd` in if direnv is set up). The timer service
+  runs on the host `PATH`, though, so the auto-update host still needs
+  the apt packages — the `apt install` line in `NEW-TRACKER.md`
+  § "Host prerequisites (Debian)" lists them.
 
 ## Auto-update worktree
 

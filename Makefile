@@ -8,8 +8,9 @@ BANNER_PNG := $(SITE)/static/diagspill-tracker.png
 .PHONY: build dist banner check
 
 # Rasterise the social-media / OpenGraph banner from its SVG source.
-# The PNG is committed, so this — and the resvg + Roboto-fonts
-# dependency — is only needed after editing the SVG.
+# The PNG is committed, so this — and the resvg + banner-fonts
+# (Roboto, Liberation Mono) dependency — is only needed after
+# editing the SVG.
 banner:
 	resvg $(BANNER_SVG) $(BANNER_PNG)
 
