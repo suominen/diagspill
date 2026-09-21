@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-21
+lastmod: 2026-09-22
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -124,7 +124,6 @@ carries the fix, and stay `—` until then.
 | Debian | 12 (6.12 opt-in) | 6.12.107-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
 | Proxmox VE | 9 (default) | 7.0.14-19-pve | 7.0.14-18-pve | 2026-09-17 | :white_check_mark: Fixed — folded into Ubuntu-resolute rebase |
 | Proxmox VE | 8 (default) | 6.8.12-43-pve | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
-| Proxmox VE | 8 (6.14 opt-in) | 6.14.11-9~bpo12+1 | — | — | :x: Vulnerable |
 | NixOS | master | 6.18.52 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | release-26.05 | 6.18.52 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
 | NixOS | Unstable | 6.18.52 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
@@ -201,7 +200,10 @@ Proxmox ships its own kernels, so Debian's status does not carry over.
 (`…-sctp-prevent-peer-transport-count-overflow.patch`), first in
 **`6.8.12-43`** (2026-08-18). The 6.8 base is old, but the Ubuntu-derived
 kernel carries SCTP and received the cherry-pick, so a pre-fix Proxmox
-series is not safe by base version alone.
+series is not safe by base version alone. PVE 8 then reached end of
+life in **August 2026**, so that fixed build is its last kernel: a host
+on it is patched for this bug but will get nothing further, and should
+upgrade to PVE 9.
 
 **PVE 9's `proxmox-kernel-7.0`** is **fixed**, but not through the
 cherry-pick Proxmox had staged for it: that standalone patch first
@@ -211,19 +213,17 @@ before the kernel's regular Ubuntu-resolute rebase overtook it.
 stable **7.1.8–7.1.13** — which already carries `bd0e9289e264` — so the
 now-redundant standalone cherry-pick was dropped in the same rebase.
 
-PVE 8 additionally offers `proxmox-kernel-6.14` as a `bookworm-backports`
-opt-in for newer hardware support. It is **vulnerable**: its Ubuntu base
-predates Ubuntu's own fix, it carries no cherry-pick, and Ubuntu's
-`linux-hwe-6.14` on noble is end-of-life, so no further Ubuntu-side rebase
-will bring the fix — only a direct Proxmox cherry-pick would close it, and
-none has landed.
+PVE 8's `bookworm-backports` opt-in `proxmox-kernel-6.14` never received
+the fix before the release's end of life, and no fix is coming: its
+Ubuntu base predates Ubuntu's own fix, it carries no cherry-pick, and
+Ubuntu's `linux-hwe-6.14` on noble is itself end-of-life. It is
+permanently **vulnerable**; a host booting it should upgrade to PVE 9.
 
-Both releases also still publish pre-GA preview kernel series that Proxmox
-abandoned before this disclosure and that never received the fix — PVE 9's
-`proxmox-kernel-6.14` and `proxmox-kernel-6.17`, and PVE 8's
-`proxmox-kernel-6.2` and `proxmox-kernel-6.5`. No fix is coming for any of
-them; a host still booting one of these preview kernels stays vulnerable
-until it switches to its release's current default kernel.
+PVE 9 also still publishes pre-GA preview kernel series that Proxmox
+abandoned before this disclosure and that never received the fix —
+`proxmox-kernel-6.14` and `proxmox-kernel-6.17`. No fix is coming for
+either; a host still booting one of these preview kernels stays
+vulnerable until it switches to the current default kernel.
 
 ### NixOS
 
@@ -480,6 +480,8 @@ readers never need it.
     (changelog dated 2026-08-18); `pve-no-subscription` publishes
     `proxmox-kernel-6.8.12-43-pve`. `proxmox-default-kernel` on bookworm
     depends on `proxmox-kernel-6.8`.
+  - PVE 8 reached end of life in 2026-08 (Proxmox VE FAQ lifecycle
+    table, pve.proxmox.com/wiki/FAQ), before this tracker existed.
   - PVE 9 `proxmox-kernel-7.0` fixed via `7.0.14-18` (changelog dated
     2026-09-17): the Ubuntu submodule bump reaches upstream stable
     7.1.8-7.1.13, spanning the branch's `7.1.8` first fix, and the same
@@ -487,12 +489,11 @@ readers never need it.
     2026-08-18 as now redundant. `proxmox-default-kernel` on trixie
     depends on `proxmox-kernel-7.0`.
   - PVE 8 `proxmox-kernel-6.14` opt-in (`bookworm-6.14`, source
-    `bookworm-backports`): newest `6.14.11-9~bpo12+1` (2026-05-15), no SCTP
-    cherry-pick; per Ubuntu's CVE tracker `linux-hwe-6.14` on noble is
-    `ignored` (end of life), so no Ubuntu rebase will bring the fix.
+    `bookworm-backports`): last built 2026-05-15, no SCTP cherry-pick;
+    per Ubuntu's CVE tracker `linux-hwe-6.14` on noble is `ignored`
+    (end of life).
   - Preview series abandoned before this disclosure, none carrying the fix:
-    PVE 9's `proxmox-kernel-6.14`/`6.17`, PVE 8's
-    `proxmox-kernel-6.2`/`6.5` — prose only, no rows.
+    PVE 9's `proxmox-kernel-6.14`/`6.17`.
 - **NixOS** (`~/src/nixos/nixpkgs`): `linux_default = packages.linux_6_18`
   on both `master` and `release-26.05`; every tracked ref resolves 6.18 at
   or above the `6.18.44` first-fixed release, so all seven rows are fixed.

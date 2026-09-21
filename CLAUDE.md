@@ -192,7 +192,12 @@ an opt-in overtaken by a newer one is labelled `old` (`9 (6.17 old)`).
 Keep an `old` row (hosts still run it), but expect no more updates for
 it: Proxmox discontinues updates for superseded series after a short
 transition tail, and every such series is EOL on kernel.org, so a
-vulnerable `old` row will likely never flip. However, a release,
+vulnerable `old` row will likely never flip. **PVE 8** reached end of
+life in 2026-08 with no further kernel updates: it keeps only its
+frozen, already-fixed default row, its vulnerable `6.14` opt-in gets
+no row (a short paragraph in the `### Proxmox VE` prose), and nothing new
+is expected from the bookworm `pve-no-subscription` index or the
+`bookworm-*` changelog branches. More generally, a release,
 stream, or kernel series whose updates had already ended **before the
 tracker existed** gets **no** row at all — `old`, opt-in, or
 otherwise — if it died *without* the fix (the same principle as the
