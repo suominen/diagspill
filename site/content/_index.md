@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-19
+lastmod: 2026-09-21
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -108,7 +108,7 @@ carries the fix, and stay `—` until then.
 
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
-| Linux kernel | mainline | 7.3-rc3 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
+| Linux kernel | mainline | 7.3-rc4 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
 | Linux kernel | 7.2.x | 7.2.6 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
 | Linux kernel | 7.1.x | 7.1.13 | 7.1.8 | 2026-08-09 | :white_check_mark: Fixed — EOL |
 | Linux kernel | 6.18.x | 6.18.52 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
