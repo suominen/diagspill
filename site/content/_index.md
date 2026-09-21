@@ -109,10 +109,10 @@ carries the fix, and stay `—` until then.
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
 | Linux kernel | mainline | 7.3-rc4 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
-| Linux kernel | 7.2.x | 7.2.6 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
+| Linux kernel | 7.2.x | 7.2.7 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
 | Linux kernel | 7.1.x | 7.1.13 | 7.1.8 | 2026-08-09 | :white_check_mark: Fixed — EOL |
-| Linux kernel | 6.18.x | 6.18.52 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 6.12.x | 6.12.110 | 6.12.103 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.18.x | 6.18.53 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.12.x | 6.12.111 | 6.12.103 | 2026-08-09 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 6.6.x | 6.6.157 | 6.6.151 | 2026-08-09 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 6.1.x | 6.1.188 | 6.1.183 | 2026-08-19 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 5.15.x | 5.15.221 | 5.15.216 | 2026-08-19 | :white_check_mark: Fixed — LTS |
@@ -122,7 +122,7 @@ carries the fix, and stay `—` until then.
 | Debian | 13 (trixie) | 6.12.107-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
 | Debian | 12 (6.12 opt-in) | 6.12.107-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
-| Proxmox VE | 9 (default) | 7.0.14-17-pve | — | — | :warning: Staged — fix in git, unshipped |
+| Proxmox VE | 9 (default) | 7.0.14-19-pve | 7.0.14-18-pve | 2026-09-17 | :white_check_mark: Fixed — folded into Ubuntu-resolute rebase |
 | Proxmox VE | 8 (default) | 6.8.12-43-pve | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
 | Proxmox VE | 8 (6.14 opt-in) | 6.14.11-9~bpo12+1 | — | — | :x: Vulnerable |
 | NixOS | master | 6.18.52 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
@@ -203,16 +203,13 @@ Proxmox ships its own kernels, so Debian's status does not carry over.
 kernel carries SCTP and received the cherry-pick, so a pre-fix Proxmox
 series is not safe by base version alone.
 
-**PVE 9's `proxmox-kernel-7.0`** is **staged, not yet shipped**. The
-published `pve-no-subscription` build rebases Ubuntu-7.0.0-38.38, whose
-stable content reaches only **7.1.7** — one release short of the 7.1
-branch's `7.1.8` first fix — and carries no named DiagSpill cherry-pick.
-The pve-kernel git tree has since moved past that point: an unreleased
-changelog entry syncs the Ubuntu submodule through upstream stable
-**7.1.8–7.1.13**, spanning the fix, but Ubuntu's own resolute advisory
-for this CVE is still *pending* and the newer build has not reached
-`pve-no-subscription`. The row stays vulnerable in practice until the
-fix ships in a published build.
+**PVE 9's `proxmox-kernel-7.0`** is **fixed**, but not through the
+cherry-pick Proxmox had staged for it: that standalone patch first
+appeared in git on 2026-08-18 but never reached `pve-no-subscription`
+before the kernel's regular Ubuntu-resolute rebase overtook it.
+**`7.0.14-18`** (2026-09-17) bumped the Ubuntu submodule through upstream
+stable **7.1.8–7.1.13** — which already carries `bd0e9289e264` — so the
+now-redundant standalone cherry-pick was dropped in the same rebase.
 
 PVE 8 additionally offers `proxmox-kernel-6.14` as a `bookworm-backports`
 opt-in for newer hardware support. It is **vulnerable**: its Ubuntu base
@@ -483,14 +480,12 @@ readers never need it.
     (changelog dated 2026-08-18); `pve-no-subscription` publishes
     `proxmox-kernel-6.8.12-43-pve`. `proxmox-default-kernel` on bookworm
     depends on `proxmox-kernel-6.8`.
-  - PVE 9 `proxmox-kernel-7.0`: the published `pve-no-subscription` build
-    `7.0.14-17-pve` rebases Ubuntu-7.0.0-38.38, stable content through
-    7.1.7 only, no named cherry-pick. Ubuntu's own resolute status for
-    CVE-2026-74469 is `pending` (`ubuntu.com/security/cves` JSON, no
-    released version). An unreleased changelog entry (dated 2026-09-17,
-    not yet in `pve-no-subscription`) syncs the Ubuntu submodule through
-    upstream stable 7.1.8-7.1.13, spanning the branch's first fix.
-    `proxmox-default-kernel` on trixie depends on `proxmox-kernel-7.0`.
+  - PVE 9 `proxmox-kernel-7.0` fixed via `7.0.14-18` (changelog dated
+    2026-09-17): the Ubuntu submodule bump reaches upstream stable
+    7.1.8-7.1.13, spanning the branch's `7.1.8` first fix, and the same
+    commit drops the standalone SCTP cherry-pick patch staged since
+    2026-08-18 as now redundant. `proxmox-default-kernel` on trixie
+    depends on `proxmox-kernel-7.0`.
   - PVE 8 `proxmox-kernel-6.14` opt-in (`bookworm-6.14`, source
     `bookworm-backports`): newest `6.14.11-9~bpo12+1` (2026-05-15), no SCTP
     cherry-pick; per Ubuntu's CVE tracker `linux-hwe-6.14` on noble is
