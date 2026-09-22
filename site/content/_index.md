@@ -126,9 +126,9 @@ carries the fix, and stay `—` until then.
 | Proxmox VE | 8 (default) | 6.8.12-43-pve | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
 | NixOS | master | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | release-26.05 | 6.18.53 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
-| NixOS | Unstable | 6.18.52 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
+| NixOS | Unstable | 6.18.53 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | Unstable (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
-| NixOS | Unstable (nixpkgs) | 6.18.52 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
+| NixOS | Unstable (nixpkgs) | 6.18.53 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | 26.05 | 6.18.52 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.56.1.el10_2.0.1 | — | — | :x: Vulnerable — no RHSA yet |
