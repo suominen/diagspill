@@ -1,8 +1,8 @@
 [Unit]
-Description=Run DiagSpill tracker update twice daily
+Description=Run DiagSpill tracker update daily
 
 [Timer]
-OnCalendar=*-*-* 06,18:20:00
+OnCalendar=*-*-* 06:20:00
 Persistent=true
 RandomizedDelaySec=2m
 

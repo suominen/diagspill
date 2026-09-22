@@ -428,7 +428,8 @@ systemctl --user daemon-reload
 systemctl --user enable --now diagspill-tracker-update.timer
 ```
 
-The timer fires at `06,18:20` — pick a slot no other tracker uses
+The timer fires daily at `06:20` (mornings only: the one open axis,
+Rocky, moves slowly) — pick a slot no other tracker uses
 (verify the live set with `systemctl --user list-timers | grep tracker`,
 not just the in-repo registry, which has gone stale) so the shared clones
 are not fetched

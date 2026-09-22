@@ -18,7 +18,7 @@ patch status — belongs to the tracker page, not to this README:
 Edit that file; everything else in this repo is build infrastructure.
 
 None of it is restated here on purpose.  The tracker page is revised as
-CVEs are assigned and distributions ship fixes — twice daily by the
+CVEs are assigned and distributions ship fixes — daily by the
 auto-update agent while the tracker is live — so any copy kept in this
 README would silently rot.  Resist re-adding a summary.
 
