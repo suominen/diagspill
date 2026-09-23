@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-22
+lastmod: 2026-09-23
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -118,7 +118,7 @@ carries the fix, and stay `—` until then.
 | Linux kernel | 5.15.x | 5.15.221 | 5.15.216 | 2026-08-19 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 5.10.x | 5.10.270 | 5.10.265 | 2026-08-19 | :white_check_mark: Fixed — LTS |
 | Debian | sid (unstable) | 7.2.6-1 | 7.1.8-1 | 2026-08-12 | :white_check_mark: Fixed |
-| Debian | forky (testing) | 7.1.13-1 | 7.1.8-1 | 2026-08-16 | :white_check_mark: Fixed |
+| Debian | forky (testing) | 7.2.6-1 | 7.1.8-1 | 2026-08-16 | :white_check_mark: Fixed |
 | Debian | 13 (trixie) | 6.12.107-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
 | Debian | 12 (6.12 opt-in) | 6.12.107-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
