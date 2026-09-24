@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-23
+lastmod: 2026-09-24
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -27,7 +27,7 @@ cover:
 | Public PoC | [manizada/DiagSpill][poc] |
 | Related | Disclosed together with [DirtyAH6](https://kimmo.cloud/dirtyah6/) (CVE-2026-80844), [TUNderflow](https://kimmo.cloud/tunderflow/) (CVE-2026-81000), and [PPPoEject](https://kimmo.cloud/pppoeject/) (CVE-2026-68121) |
 | Reachability | The **`sctp` and `sctp_diag` modules available**, and nothing else. An unprivileged local user builds the association and issues the diagnostic dump themselves — **no user namespace and no capability** are required. On most distributions `sctp` autoloads on first use of an `AF_INET`/`IPPROTO_SCTP` socket, and `sctp_diag` autoloads when `ss --sctp` (or any `SOCK_DIAG` SCTP query) runs |
-| KEV / EPSS / CVSS | Not in KEV. EPSS **0.47%** (39th percentile). Two CVSS vantage points: **kernel CNA / NVD** 3.1 **8.8 HIGH** (`AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H`), scoring a remote SCTP peer driving the transport count; **Red Hat** 3.1 **7.0** (`AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H`), scoring the demonstrated local path. See *Scoring* below |
+| KEV / EPSS / CVSS | Not in KEV. EPSS **0.47%** (39th percentile). Two CVSS vantage points: **kernel CNA / NVD** 3.1 **8.8 HIGH** (`AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H`), scoring a remote SCTP peer driving the transport count; **Red Hat** 3.1 **8.3 HIGH** (`AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:H`), now matching the CNA's network vector and differing only in integrity impact. See *Scoring* below |
 {.summary}
 
 > :information_source: **The gate is module availability, not privilege.**
@@ -117,7 +117,7 @@ carries the fix, and stay `—` until then.
 | Linux kernel | 6.1.x | 6.1.188 | 6.1.183 | 2026-08-19 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 5.15.x | 5.15.221 | 5.15.216 | 2026-08-19 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 5.10.x | 5.10.270 | 5.10.265 | 2026-08-19 | :white_check_mark: Fixed — LTS |
-| Debian | sid (unstable) | 7.2.6-1 | 7.1.8-1 | 2026-08-12 | :white_check_mark: Fixed |
+| Debian | sid (unstable) | 7.2.7-1 | 7.1.8-1 | 2026-08-12 | :white_check_mark: Fixed |
 | Debian | forky (testing) | 7.2.6-1 | 7.1.8-1 | 2026-08-16 | :white_check_mark: Fixed |
 | Debian | 13 (trixie) | 6.12.107-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
@@ -129,7 +129,7 @@ carries the fix, and stay `—` until then.
 | NixOS | Unstable | 6.18.53 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | Unstable (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | Unstable (nixpkgs) | 6.18.53 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
-| NixOS | 26.05 | 6.18.52 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
+| NixOS | 26.05 | 6.18.53 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.56.1.el10_2.0.1 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 9 | 5.14.0-687.49.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
@@ -437,11 +437,11 @@ readers never need it.
   scores `AV:N` because a remote SCTP peer can add unique transports via
   INIT parameters and ASCONF ADD-IP; `PR:L` because reaching the diagnostic
   path needs an ordinary local account.
-- **Red Hat** (hydra `securitydata` and CSAF/VEX, initial release
-  2026-08-15): CVSS 3.1 **7.0** (`CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H`),
-  scoring `AV:L`/`AC:H` for the demonstrated local path and the effort of
-  amassing 65,536 transports. The divergence is vantage point, not
-  disagreement on the flaw.
+- **Red Hat** (hydra `securitydata` and CSAF/VEX, tracking version 3,
+  status `final`): CVSS 3.1 revised from the initial **7.0** to **8.3**
+  (`CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:H`), now matching the
+  kernel CNA's `AV:N/AC:L` network vector and differing only in
+  integrity impact (`I:L` vs `I:H`).
 - **NVD / EPSS / KEV**: NVD record published 2026-08-15, `vulnStatus`
   `Received` (its listed CVSS mirrors the CNA score, not an independent NVD
   assessment); EPSS **0.47%** (39th percentile, via api.first.org, dated
