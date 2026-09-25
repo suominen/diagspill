@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-24
+lastmod: 2026-09-25
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -131,9 +131,9 @@ carries the fix, and stay `—` until then.
 | NixOS | Unstable (nixpkgs) | 6.18.53 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | 26.05 | 6.18.53 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
-| Rocky Linux / RHEL | 10 | 6.12.0-211.56.1.el10_2.0.1 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 9 | 5.14.0-687.49.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 8 | 4.18.0-553.164.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 10 | 6.12.0-211.58.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 9 | 5.14.0-687.50.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 8 | 4.18.0-553.166.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
 | Amazon Linux | 2023 (default) | 6.1.186-228.376 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
 | Amazon Linux | 2023 (6.12 opt-in) | 6.12.103-129.197 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
 | Amazon Linux | 2023 (6.18 opt-in) | 6.18.48-109.150 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
@@ -255,7 +255,10 @@ in-support lines — EL10 (6.12-based), EL9 (5.14-based), EL8 (4.18-based) —
 are in-window. Red Hat published a CVE assessment (initial release
 2026-08-15) rating the kernel **Affected** across EL8/9/10 but has **not**
 shipped a fix — no `vendor_fix` remediation and no RHSA — so every stream is
-**vulnerable pending an advisory**.
+**vulnerable pending an advisory**. Red Hat has begun fixing legacy
+Advanced/Extended Update Support streams — **RHSA-2026:71565** (2026-09-24)
+fixes RHEL 8.4 AUS/E4S at `kernel-4.18.0-305.209.1.el8_4` — but the general
+EL8/9/10 `kernel` package tracked here remains unfixed.
 
 Module posture reduces reachability on a stock EL host: `sctp.ko` and
 `sctp_diag.ko` are not in the base kernel packages but in
@@ -506,9 +509,13 @@ readers never need it.
   nixos-unstable-small 2026-08-10, nixpkgs-unstable 2026-08-11, nixos-26.05
   2026-08-12, nixos-26.05-small 2026-08-10).
 - **Rocky / RHEL family**: Red Hat's securitydata/VEX record (initial
-  release 2026-08-15) rates the kernel **Affected** across EL8/9/10 with no
-  `vendor_fix` and no RHSA, so no fix has shipped. EL8/9/10 all carry SCTP
-  and are in-window. `sctp.ko`/`sctp_diag.ko` ship in
+  release 2026-08-15) rates the general EL8/9/10 `kernel` package
+  **Affected** with no `vendor_fix` and no RHSA against it, so no fix has
+  shipped for the tracked streams. One advisory now exists in the record —
+  **RHSA-2026:71565** (2026-09-24), `kernel-4.18.0-305.209.1.el8_4` — but it
+  covers only the RHEL 8.4 Advanced/Extended Update Support product
+  variants, not the general EL8 stream. EL8/9/10 all carry SCTP and are
+  in-window. `sctp.ko`/`sctp_diag.ko` ship in
   `kernel-modules-extra`, which also installs a `blacklist sctp`
   modprobe.d file. The Rocky rows' *Current kernel* NVRs are read from
   BaseOS repodata (`primary.xml.gz`, highest `rel`). No AlmaLinux errata or
