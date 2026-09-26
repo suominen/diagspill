@@ -561,7 +561,13 @@ score yet. Red Hat's own score may be marked `draft`.
   series (`https://ubuntu.com/security/cves/CVE-2026-74469.json`, the
   `packages[].statuses[]` entries — `released` plus version); base ≥
   Ubuntu's fixed version means the PVE build carries the fix even with
-  no cherry-pick line. Kernel.org EOL for the series proves nothing
+  no cherry-pick line. ubuntu.com intermittently stalls for 20–30 s and
+  then answers 504, so fetch with a per-attempt timeout and retries
+  (`curl -fsSL --retry 4 --retry-all-errors --retry-delay 10 -m 45`)
+  rather than giving up on the first error; the search endpoint
+  `https://ubuntu.com/security/cves.json?q=CVE-2026-74469` returns the same
+  record under `.cves[]` (select the exact `id`) as an alternate.
+  Kernel.org EOL for the series proves nothing
   here — Ubuntu keeps fixing series long after upstream EOL; named
   cherry-picks are the signal only for series Ubuntu no longer fixes
   (superseded `old` series, and opt-ins whose Ubuntu HWE source is
