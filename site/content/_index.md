@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-25
+lastmod: 2026-09-26
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -109,9 +109,9 @@ carries the fix, and stay `—` until then.
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
 | Linux kernel | mainline | 7.3-rc4 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
-| Linux kernel | 7.2.x | 7.2.7 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
+| Linux kernel | 7.2.x | 7.2.8 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
 | Linux kernel | 7.1.x | 7.1.13 | 7.1.8 | 2026-08-09 | :white_check_mark: Fixed — EOL |
-| Linux kernel | 6.18.x | 6.18.53 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.18.x | 6.18.54 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 6.12.x | 6.12.111 | 6.12.103 | 2026-08-09 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 6.6.x | 6.6.157 | 6.6.151 | 2026-08-09 | :white_check_mark: Fixed — LTS |
 | Linux kernel | 6.1.x | 6.1.188 | 6.1.183 | 2026-08-19 | :white_check_mark: Fixed — LTS |
@@ -132,8 +132,8 @@ carries the fix, and stay `—` until then.
 | NixOS | 26.05 | 6.18.53 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.53 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.58.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 9 | 5.14.0-687.50.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 8 | 4.18.0-553.166.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 9 | 5.14.0-687.51.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 8 | 4.18.0-553.168.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
 | Amazon Linux | 2023 (default) | 6.1.186-228.376 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
 | Amazon Linux | 2023 (6.12 opt-in) | 6.12.103-129.197 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
 | Amazon Linux | 2023 (6.18 opt-in) | 6.18.48-109.150 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
@@ -177,9 +177,8 @@ bookworm also offers an **opt-in newer kernel**, the `linux-6.12` source
 package (the trixie 6.12 kernel rebuilt for bookworm and shipped through
 `bookworm-security`). Its earlier `6.12.101-1~deb12u1` build predated the
 fix; its `6.12.107-1~deb12u1` build (past `6.12.103`) carries it. The
-security tracker does not assess this CVE against the opt-in package by
-name, so its verdict is a version compare against the branch's first-fixed
-release.
+security tracker now lists this CVE against `linux-6.12` directly,
+resolved at that same `6.12.107-1~deb12u1` build.
 
 **bullseye (Debian 11) reached the end of its LTS support window on
 2026-08-31** and gets no rows here: the security tracker no longer carries a
@@ -255,10 +254,11 @@ in-support lines — EL10 (6.12-based), EL9 (5.14-based), EL8 (4.18-based) —
 are in-window. Red Hat published a CVE assessment (initial release
 2026-08-15) rating the kernel **Affected** across EL8/9/10 but has **not**
 shipped a fix — no `vendor_fix` remediation and no RHSA — so every stream is
-**vulnerable pending an advisory**. Red Hat has begun fixing legacy
-Advanced/Extended Update Support streams — **RHSA-2026:71565** (2026-09-24)
-fixes RHEL 8.4 AUS/E4S at `kernel-4.18.0-305.209.1.el8_4` — but the general
-EL8/9/10 `kernel` package tracked here remains unfixed.
+**vulnerable pending an advisory**. Red Hat has been fixing legacy
+Advanced/Extended/Update-Support streams — a batch of advisories dated
+**2026-09-24** now spans RHEL 7 ELS, 8.4/8.6/8.8 AUS/TUS/E4S, and 9.2/9.4/9.6
+E4S/EUS through 10.0 EUS — but each covers only that narrow product variant;
+the general EL8/9/10 `kernel` package tracked here remains unfixed.
 
 Module posture reduces reachability on a stock EL host: `sctp.ko` and
 `sctp_diag.ko` are not in the base kernel packages but in
@@ -463,12 +463,10 @@ readers never need it.
   - bookworm resolved *fixed*; first fixed `6.1.187-1` via **DLA-4777-1**
     (dated 2026-09-08, bookworm-security; first seen 2026-09-08 per
     snapshot).
-  - bookworm `linux-6.12` opt-in: the security tracker does not assess this
-    CVE against the source package by name; snapshot lists only
-    `6.12.100-1~deb12u1`, `6.12.101-1~deb12u1` (both pre-fix), and
-    `6.12.107-1~deb12u1` (in debian-security since 2026-09-16, past the
-    `6.12.103` first fix), so first-fixed is `6.12.107-1~deb12u1` by version
-    compare.
+  - bookworm `linux-6.12` opt-in: the security tracker now carries a
+    `linux-6.12` entry for this CVE, resolved at `6.12.107-1~deb12u1`
+    (past the `6.12.103` first fix); snapshot shows it in debian-security
+    since 2026-09-16.
   - bullseye reached end of LTS on **2026-08-31**; the tracker JSON carries
     no bullseye entry for this CVE, and its 5.10-line kernel predates
     `5.10.265`, so both rows are retired — no fix is coming.
@@ -511,15 +509,22 @@ readers never need it.
 - **Rocky / RHEL family**: Red Hat's securitydata/VEX record (initial
   release 2026-08-15) rates the general EL8/9/10 `kernel` package
   **Affected** with no `vendor_fix` and no RHSA against it, so no fix has
-  shipped for the tracked streams. One advisory now exists in the record —
-  **RHSA-2026:71565** (2026-09-24), `kernel-4.18.0-305.209.1.el8_4` — but it
-  covers only the RHEL 8.4 Advanced/Extended Update Support product
-  variants, not the general EL8 stream. EL8/9/10 all carry SCTP and are
-  in-window. `sctp.ko`/`sctp_diag.ko` ship in
-  `kernel-modules-extra`, which also installs a `blacklist sctp`
-  modprobe.d file. The Rocky rows' *Current kernel* NVRs are read from
-  BaseOS repodata (`primary.xml.gz`, highest `rel`). No AlmaLinux errata or
-  OSV entry for this CVE yet.
+  shipped for the tracked streams. Eight advisories now exist in the
+  record, all dated **2026-09-24**, each covering only a legacy
+  Advanced/Extended/Update-Support product variant, not the general
+  EL7/8/9/10 stream: **RHSA-2026:71565** (8.4 AUS/E4S,
+  `kernel-4.18.0-305.209.1.el8_4`), **RHSA-2026:71592** (8.6 AUS/EUS-LL,
+  `kernel-4.18.0-372.218.1.el8_6`), **RHSA-2026:71594** (8.8 TUS/E4S,
+  `kernel-4.18.0-477.170.1.el8_8`), **RHSA-2026:71599** (10.0 EUS,
+  `kernel-6.12.0-55.107.1.el10_0`), **RHSA-2026:71601**/**71606** (9.2 E4S,
+  `kernel`/`kernel-rt-5.14.0-284.194.1.el9_2`), **RHSA-2026:71569** (9.4 E4S,
+  `kernel-5.14.0-427.152.1.el9_4`), **RHSA-2026:71631** (9.6 EUS,
+  `kernel-5.14.0-570.144.1.el9_6`), **RHSA-2026:71657**/**71687** (7 ELS,
+  `kernel-rt`/`kernel-3.10.0-1160.164.1.el7`). EL8/9/10 all carry SCTP and
+  are in-window. `sctp.ko`/`sctp_diag.ko` ship in `kernel-modules-extra`,
+  which also installs a `blacklist sctp` modprobe.d file. The Rocky rows'
+  *Current kernel* NVRs are read from BaseOS repodata (`primary.xml.gz`,
+  highest `rel`). No AlmaLinux errata or OSV entry for this CVE yet.
 - **Amazon Linux**: the AL2023 `updateinfo.xml.gz` carries three references
   to CVE-2026-74469 — **ALAS2023-2026-2106** (2026-08-31) fixes `kernel6.18`
   at `6.18.44-99.149.amzn2023`; **ALAS2023-2026-2110** (2026-08-31) fixes
