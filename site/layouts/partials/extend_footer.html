@@ -71,6 +71,25 @@
             cell.classList.add('status');
         }
     });
+
+    // Long package versions in distribution tables: allow a break
+    // before each `+` (Rocky's module builds, `6.2.0-53.module+el8.10.0
+    // +40076+c1171059.6`) and nowhere else. The cells are nowrap in
+    // custom.css, so the version is split into nowrap pieces joined by
+    // <wbr>, and the cell is tagged to wrap between them. Copying the
+    // cell still yields the version unchanged.
+    document.querySelectorAll('.post-content table.distros td > code').forEach((code) => {
+        const text = code.textContent;
+        if (!text.includes('+')) return;
+        code.replaceChildren();
+        text.split(/(?=\+)/).forEach((piece, i) => {
+            if (i > 0) code.appendChild(document.createElement('wbr'));
+            const span = document.createElement('span');
+            span.textContent = piece;
+            code.appendChild(span);
+        });
+        code.parentElement.classList.add('wrap-plus');
+    });
 </script>
 
 {{- if (.Param "ShowCodeCopyButtons") }}

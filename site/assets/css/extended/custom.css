@@ -59,6 +59,23 @@
   white-space: nowrap;
 }
 
+/* Except a version long enough to widen its column on its own: the
+   script in extend_footer.html splits a `+`-joined version (Rocky's
+   module builds) into nowrap pieces and tags the cell, which may then
+   wrap between the pieces, before each `+`, and nowhere else. */
+.post-content table.distros td.wrap-plus {
+  white-space: normal;
+}
+.post-content table.distros td.wrap-plus code > span {
+  white-space: nowrap;
+}
+/* Each wrapped line gets the code span's own padding and rounded
+   background, so the continuation lines align with the first. */
+.post-content table.distros td.wrap-plus code {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 /* Group heading rows (inserted by extend_footer.html in place of the
    Distribution column): one full-width row per distribution,
    left-aligned and set off from the preceding group. With separate

@@ -278,15 +278,17 @@ EOF
 )"
   ;;
 package)
-  # nixpkgs-versions / pkgsrc-versions are the package-side lookup
-  # helpers, and git ls-tree / cat-file / merge-base back their
-  # revision lookups -- package-side needs kernel mode does not have.
+  # nixpkgs-versions / pkgsrc-versions / debian-versions are the
+  # package-side lookup helpers, and git ls-tree / cat-file /
+  # merge-base back their revision lookups -- package-side needs
+  # kernel mode does not have.
   # A heredoc, not a single-quoted literal, so ${HELPERS} expands here:
   # the outer settings heredoc would not re-expand it, and the rule
   # would never match the path the preamble hands the agent.
   mode_tools="$(cat << EOF
     "Bash(${HELPERS}/nixpkgs-versions:*)",
     "Bash(${HELPERS}/pkgsrc-versions:*)",
+    "Bash(${HELPERS}/debian-versions:*)",
     "Bash(git ls-tree:*)",
     "Bash(git cat-file:*)",
     "Bash(git merge-base:*)"
