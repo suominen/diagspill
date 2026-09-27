@@ -333,6 +333,16 @@ with a terse bold lead and the method attribution (e.g. `**Debian**
 multiple facts together into a paragraph-bullet. Sub-bullets follow
 the table's ordering conventions.
 
+**Budget and growth.** A lead names the topic and the source or method
+and stops there — at most four lines, no facts.  A sub-bullet holds one
+fact in at most six lines; if it needs more, it is two facts.  When a
+run learns something new, add or edit a sub-bullet — never extend the
+lead or append a clause to a neighbouring sub-bullet.  Name each pairing
+explicitly (`6daa7f0` on `master`, `38fa3e0` on `bookworm-6.8`) rather
+than relying on the order of an `A / B` list.  `scripts/check-shape`
+(run by `make check`) enforces these limits and the eight-line limit on
+per-distro paragraphs and bullets.
+
 Update the section rather than appending a line per re-check. Edit the
 relevant subsection in place — usually the one sub-bullet whose fact
 changed. The log carries no dates of its own — the front-matter

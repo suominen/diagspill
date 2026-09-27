@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+# @(#)$KimmoSuominen$
+#
+# Check that a tracker page's per-distro prose and verification log
+# stay within their size budgets.
+#
+# 20260927  Kimmo Suominen
+#
+
+import os
+import re
+import sys
+
+PROG = "check-shape"
+
+PARA_MAX = 8     # per-distro paragraph or bullet
+LEAD_MAX = 4     # log entry lead, before its first sub-bullet
+FACT_MAX = 6     # log sub-bullet, or a log entry with no sub-bullets
+
+DEFAULT_PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            os.pardir, "site", "content", "_index.md")
+
+USAGE = """\
+Usage:\t%(prog)s [-h] [file]
+
+Report every per-distro paragraph or bullet longer than %(para)d source
+lines, every verification-log lead longer than %(lead)d lines, and every
+log sub-bullet (or entry without sub-bullets) longer than %(fact)d lines.
+The per-distro prose is the ### subsections of "## Patch status" or
+"## Distribution status"; the log is "## Verification log".  Only
+bullets are checked in the log; its intro prose is not.  Fenced code
+blocks, HTML comments and blockquotes are skipped, and a bullet's lazy
+or indented continuation lines count toward that bullet.  The file
+defaults to the tracker's own site/content/_index.md.
+
+Each offence is printed as file:line: followed by a description.  Exit
+status is 0 when nothing is over budget, 1 when something is, and 2 on
+a usage or input error, including a page with neither section.
+""" % {"prog": PROG, "para": PARA_MAX, "lead": LEAD_MAX,
+       "fact": FACT_MAX}
+
+DISTRO_HEADINGS = ("## Patch status", "## Distribution status")
+LOG_HEADING = "## Verification log"
+
+BULLET = re.compile(r"^( *)(?:[-*+]|\d+[.)]) ")
+FENCE = re.compile(r"^ *(```|~~~)")
+BREAKS = ("#", "|", "{", ">")
+
+
+def die(message):
+    sys.stderr.write("%s: %s\n" % (PROG, message))
+    sys.exit(2)
+
+
+def normalise(lines):
+    """Return the page with tabs expanded, and with fence lines, fenced
+    content and HTML comments blanked, so that nothing inside them is
+    counted or mistaken for a heading.  Line numbers are preserved."""
+    out = []
+    fence = None
+    comment = False
+    for line in lines:
+        line = line.rstrip("\r").expandtabs(8)
+        match = FENCE.match(line)
+        if fence:
+            if match and match.group(1) == fence:
+                fence = None
+            out.append("")
+        elif match:
+            fence = match.group(1)
+            out.append("")
+        elif comment or line.lstrip().startswith("<!--"):
+            comment = "-->" not in line
+            out.append("")
+        else:
+            out.append(line)
+    return out
+
+
+def sections(lines):
+    """Yield (kind, start, end) line-index ranges for the checked
+    sections: the per-distro ### subsections and the log."""
+    top = [i for i, line in enumerate(lines)
+           if line.startswith("## ")] + [len(lines)]
+    for here, following in zip(top, top[1:]):
+        heading = lines[here]
+        if heading.startswith(DISTRO_HEADINGS):
+            first = next((i for i in range(here + 1, following)
+                          if lines[i].startswith("### ")), following)
+            yield "distro", first, following
+        elif heading.startswith(LOG_HEADING):
+            yield "log", here + 1, following
+
+
+class Block:
+    """A bullet (with its continuation lines) or a prose paragraph."""
+
+    def __init__(self, kind, indent, first):
+        self.kind = kind
+        self.indent = indent
+        self.first = first
+        self.count = 1
+        self.head = 1          # lines before the first child bullet
+        self.children = False
+
+
+def blocks(lines, start, end):
+    """Split a section into Blocks.  Continuation lines, lazy or
+    indented, and paragraphs indented under a bullet after a blank line
+    count toward the innermost open bullet."""
+    out = []
+    open_bullets = []          # stack of Blocks, innermost last
+    para = None
+    blank = False
+    for i in range(start, end):
+        line = lines[i]
+        match = BULLET.match(line)
+        indent = len(line) - len(line.lstrip(" "))
+        if not line.strip():
+            blank = True
+            para = None
+            continue
+        if match:
+            indent = len(match.group(1))
+            while open_bullets and open_bullets[-1].indent >= indent:
+                open_bullets.pop()
+            if open_bullets:
+                parent = open_bullets[-1]
+                if not parent.children:
+                    parent.children = True
+                    parent.head = parent.count
+            block = Block("bullet", indent, i)
+            open_bullets.append(block)
+            out.append(block)
+            para = None
+        elif line.lstrip().startswith(BREAKS):
+            open_bullets = []
+            para = None
+        elif open_bullets and (not blank or indent > 0):
+            while (len(open_bullets) > 1 and blank
+                   and indent < open_bullets[-1].indent + 2):
+                open_bullets.pop()
+            open_bullets[-1].count += 1
+        elif para and not blank:
+            para.count += 1
+        elif indent == 0:
+            open_bullets = []
+            para = Block("para", 0, i)
+            out.append(para)
+        blank = False
+    return out
+
+
+def offences(lines):
+    """Yield (line index, description) for every block over budget."""
+    for kind, start, end in sections(lines):
+        for block in blocks(lines, start, end):
+            if kind == "distro":
+                limit, count = PARA_MAX, block.count
+                what = "paragraph" if block.kind == "para" else "bullet"
+            elif block.kind != "bullet":
+                continue
+            elif block.indent == 0 and block.children:
+                limit, count, what = LEAD_MAX, block.head, "log lead"
+            elif block.indent == 0:
+                limit, count, what = FACT_MAX, block.count, "log entry"
+            else:
+                limit, count = FACT_MAX, block.count
+                what = "log sub-bullet"
+            if count > limit:
+                yield block.first, "%s is %d lines (limit %d): %s" % (
+                    what, count, limit, lines[block.first].strip()[:50])
+
+
+def parse_args(argv):
+    if argv and argv[0] == "--":
+        argv = argv[1:]
+    elif argv and argv[0] in ("-h", "--help"):
+        sys.stdout.write(USAGE)
+        sys.exit(0)
+    elif argv and argv[0].startswith("-"):
+        sys.stderr.write("%s: unknown option: %s\n" % (PROG, argv[0]))
+        sys.stderr.write(USAGE)
+        sys.exit(2)
+    if len(argv) > 1:
+        sys.stderr.write(USAGE)
+        sys.exit(2)
+    return argv[0] if argv else DEFAULT_PAGE
+
+
+def main(argv):
+    path = parse_args(argv)
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = normalise(f.read().split("\n"))
+    except OSError as e:
+        die("%s: %s" % (path, e.strerror))
+    except UnicodeDecodeError as e:
+        die("%s: not UTF-8: %s" % (path, e.reason))
+    if not any(True for _ in sections(lines)):
+        die("%s: no %s or %s section" % (
+            path, " / ".join(DISTRO_HEADINGS), LOG_HEADING))
+    found = 0
+    for index, description in offences(lines):
+        sys.stdout.write("%s:%d: %s\n" % (path, index + 1, description))
+        found += 1
+    return 1 if found else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
