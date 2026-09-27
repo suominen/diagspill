@@ -384,12 +384,15 @@ readers never need it.
   introduced:fixed pairs are `4.7 → 5.10.265 / 5.15.216 / 6.1.183 /
   6.6.151 / 6.12.103 / 6.18.44 / 7.1.8 / 7.2`.
 - **Stable backports** (fix cherry-picks confirmed by subject grep against
-  `~/src/linux/stable`, each a new SHA): 6.6.151 (`546221b86cee`), 6.12.103
-  (`09e722030e81`), 6.18.44 (`4ba5bf7ed50f`), 7.1.8 (`6201cd1d70f1`) — all
-  tagged **2026-08-09**; 6.1.183 (`80f48523a0fe`), 5.15.216
-  (`dfea32dd76f3`), 5.10.265 (`b453e00da121`) — all tagged **2026-08-19**,
-  each its branch's first-fixed release. The `Linux kernel` rows' *Current
-  kernel* cells are read from kernel.org's `finger_banner`.
+  `~/src/linux/stable`, each a new SHA and its branch's first-fixed
+  release; *Current kernel* cells from kernel.org's `finger_banner`):
+  - 7.1.8 (`6201cd1d70f1`), tagged **2026-08-09**.
+  - 6.18.44 (`4ba5bf7ed50f`), tagged **2026-08-09**.
+  - 6.12.103 (`09e722030e81`), tagged **2026-08-09**.
+  - 6.6.151 (`546221b86cee`), tagged **2026-08-09**.
+  - 6.1.183 (`80f48523a0fe`), tagged **2026-08-19**.
+  - 5.15.216 (`dfea32dd76f3`), tagged **2026-08-19**.
+  - 5.10.265 (`b453e00da121`), tagged **2026-08-19**.
 - **v7.2** GA tag dated **2026-08-16**, already containing the fix (landed
   at `v7.2-rc6`), so the new `linux-7.2.y` branch is fixed from its first
   release. **7.1.y** is `(EOL)` at `7.1.13` per `finger_banner`, fixed since
@@ -425,7 +428,7 @@ readers never need it.
   - bookworm resolved *fixed*; first fixed `6.1.187-1` via **DLA-4777-1**
     (dated 2026-09-08, bookworm-security; first seen 2026-09-08 per
     snapshot).
-  - bookworm `linux-6.12` opt-in: the security tracker now carries a
+  - bookworm `linux-6.12` opt-in: the security tracker carries a
     `linux-6.12` entry for this CVE, resolved at `6.12.107-1~deb12u1`
     (past the `6.12.103` first fix); snapshot shows it in debian-security
     since 2026-09-16.
@@ -437,63 +440,74 @@ readers never need it.
     bookworm opt-in's from the `bookworm-security` package index.
 - **Proxmox VE** (`~/src/proxmox/pve-kernel`, `pve-no-subscription`
   `Packages.gz`):
+  - PVE 9 `proxmox-kernel-7.0` fixed via `7.0.14-18` (changelog dated
+    2026-09-17): the Ubuntu submodule bump reaches upstream stable
+    7.1.8-7.1.13, spanning the branch's `7.1.8` first fix.
+  - The same `7.0.14-18` commit drops the standalone SCTP cherry-pick
+    patch, staged since 2026-08-18, as redundant.
+  - `proxmox-default-kernel` on trixie depends on `proxmox-kernel-7.0`.
+  - Preview series abandoned before this disclosure, none carrying the fix:
+    PVE 9's `proxmox-kernel-6.17` and `proxmox-kernel-6.14`.
   - PVE 8 `proxmox-kernel-6.8` carries
     `patches/kernel/0105-sctp-prevent-peer-transport-count-overflow.patch`
     (commit `bd0e9289e264` upstream), added in the `6.8.12-43` cycle
-    (changelog dated 2026-08-18); `pve-no-subscription` publishes
-    `proxmox-kernel-6.8.12-43-pve`. `proxmox-default-kernel` on bookworm
-    depends on `proxmox-kernel-6.8`.
+    (changelog dated 2026-08-18).
+  - `pve-no-subscription` publishes `proxmox-kernel-6.8.12-43-pve`.
+  - `proxmox-default-kernel` on bookworm depends on `proxmox-kernel-6.8`.
+  - PVE 8 `proxmox-kernel-6.14` opt-in (`bookworm-6.14`, source
+    `bookworm-backports`): last built 2026-05-15, no SCTP cherry-pick.
+  - Per Ubuntu's CVE tracker, `linux-hwe-6.14` on noble is `ignored` (end
+    of life).
   - PVE 8 reached end of life in 2026-08 (Proxmox VE FAQ lifecycle
     table, pve.proxmox.com/wiki/FAQ), before this tracker existed.
-  - PVE 9 `proxmox-kernel-7.0` fixed via `7.0.14-18` (changelog dated
-    2026-09-17): the Ubuntu submodule bump reaches upstream stable
-    7.1.8-7.1.13, spanning the branch's `7.1.8` first fix, and the same
-    commit drops the standalone SCTP cherry-pick patch staged since
-    2026-08-18 as now redundant. `proxmox-default-kernel` on trixie
-    depends on `proxmox-kernel-7.0`.
-  - PVE 8 `proxmox-kernel-6.14` opt-in (`bookworm-6.14`, source
-    `bookworm-backports`): last built 2026-05-15, no SCTP cherry-pick;
-    per Ubuntu's CVE tracker `linux-hwe-6.14` on noble is `ignored`
-    (end of life).
-  - Preview series abandoned before this disclosure, none carrying the fix:
-    PVE 9's `proxmox-kernel-6.14`/`6.17`.
-- **NixOS** (`~/src/nixos/nixpkgs`): `linux_default = packages.linux_6_18`
-  on both `master` and `release-26.05`; every tracked ref resolves 6.18 at
-  or above the `6.18.44` first-fixed release, so all seven rows are fixed.
-  Each row's *Current kernel* is the 6.18 version `kernels-org.json`
-  resolves at that ref (branch tips for `master` / `release-26.05`, channel
-  `git-revision` pins for the other five). *Fixed since*: the branch rows
-  use the commit date of the 6.18.44 bump (`510f4c4b5c99` on master,
-  2026-08-10; `5057e4c81176` on release-26.05, 2026-08-09); the channel
-  rows use `scripts/nixos-first-shipped` (nixos-unstable 2026-08-11,
-  nixos-unstable-small 2026-08-10, nixpkgs-unstable 2026-08-11, nixos-26.05
-  2026-08-12, nixos-26.05-small 2026-08-10).
-- **Rocky / RHEL family**: Red Hat's securitydata/VEX record (initial
-  release 2026-08-15) rates the general EL8/9/10 `kernel` package
-  **Affected** with no `vendor_fix` and no RHSA against it, so no fix has
-  shipped for the tracked streams. Eight advisories now exist in the
-  record, all dated **2026-09-24**, each covering only a legacy
-  Advanced/Extended/Update-Support product variant, not the general
-  EL7/8/9/10 stream: **RHSA-2026:71565** (8.4 AUS/E4S,
-  `kernel-4.18.0-305.209.1.el8_4`), **RHSA-2026:71592** (8.6 AUS/EUS-LL,
-  `kernel-4.18.0-372.218.1.el8_6`), **RHSA-2026:71594** (8.8 TUS/E4S,
-  `kernel-4.18.0-477.170.1.el8_8`), **RHSA-2026:71599** (10.0 EUS,
-  `kernel-6.12.0-55.107.1.el10_0`), **RHSA-2026:71601**/**71606** (9.2 E4S,
-  `kernel`/`kernel-rt-5.14.0-284.194.1.el9_2`), **RHSA-2026:71569** (9.4 E4S,
-  `kernel-5.14.0-427.152.1.el9_4`), **RHSA-2026:71631** (9.6 EUS,
-  `kernel-5.14.0-570.144.1.el9_6`), **RHSA-2026:71657**/**71687** (7 ELS,
-  `kernel-rt`/`kernel-3.10.0-1160.164.1.el7`). EL8/9/10 all carry SCTP and
-  are in-window. `sctp.ko`/`sctp_diag.ko` ship in `kernel-modules-extra`,
-  which also installs a `blacklist sctp` modprobe.d file. The Rocky rows'
-  *Current kernel* NVRs are read from BaseOS repodata (`primary.xml.gz`,
-  highest `rel`). No AlmaLinux errata or OSV entry for this CVE yet.
-- **Amazon Linux**: the AL2023 `updateinfo.xml.gz` carries three references
-  to CVE-2026-74469 — **ALAS2023-2026-2106** (2026-08-31) fixes `kernel6.18`
-  at `6.18.44-99.149.amzn2023`; **ALAS2023-2026-2110** (2026-08-31) fixes
-  `kernel6.12` at `6.12.103-127.188.amzn2023`; **ALAS2023-2026-2143**
-  (2026-09-14) fixes the default `kernel` at `6.1.186-228.374.amzn2023`. The
-  per-stream *Current kernel* values are read from `primary.xml.gz` (parsed
-  by `scripts/alas-cve`, which is line-safe for the packed `updateinfo.xml`).
+- **NixOS** (via `~/src/nixos/nixpkgs`; branch tips for `master` /
+  `release-26.05`, channel `git-revision` pins for the other five refs):
+  - `linux_default = packages.linux_6_18` on both `master` and
+    `release-26.05`.
+  - Every tracked ref resolves 6.18 at or above the `6.18.44` first-fixed
+    release.
+  - Each row's *Current kernel* is the 6.18 version `kernels-org.json`
+    resolves at that ref.
+  - *Fixed since* for `master` is the commit date of its 6.18.44 bump,
+    `510f4c4b5c99` (2026-08-10).
+  - *Fixed since* for `release-26.05` is the commit date of its 6.18.44
+    bump, `5057e4c81176` (2026-08-09).
+  - *Fixed since* for the channel rows comes from
+    `scripts/nixos-first-shipped`: nixos-unstable 2026-08-11,
+    nixos-unstable-small 2026-08-10, nixpkgs-unstable 2026-08-11,
+    nixos-26.05 2026-08-12, nixos-26.05-small 2026-08-10.
+- **Rocky / RHEL family** (via Red Hat's securitydata and CSAF/VEX
+  record, initial release 2026-08-15; Rocky BaseOS repodata; OSV):
+  - EL8/9/10 all carry SCTP and are in-window.
+  - The record rates the general EL8/9/10 `kernel` package **Affected**,
+    with no `vendor_fix` and no RHSA against it.
+  - The record's advisories, all dated **2026-09-24**, each cover only a
+    legacy Advanced/Extended/Update-Support product variant, not the
+    general EL7/8/9/10 stream; they are listed below by stream.
+  - **RHSA-2026:71599**: 10.0 EUS, `kernel-6.12.0-55.107.1.el10_0`.
+  - **RHSA-2026:71631**: 9.6 EUS, `kernel-5.14.0-570.144.1.el9_6`.
+  - **RHSA-2026:71569**: 9.4 E4S, `kernel-5.14.0-427.152.1.el9_4`.
+  - **RHSA-2026:71601** / **71606**: 9.2 E4S,
+    `kernel` / `kernel-rt-5.14.0-284.194.1.el9_2`.
+  - **RHSA-2026:71594**: 8.8 TUS/E4S, `kernel-4.18.0-477.170.1.el8_8`.
+  - **RHSA-2026:71592**: 8.6 AUS/EUS-LL, `kernel-4.18.0-372.218.1.el8_6`.
+  - **RHSA-2026:71565**: 8.4 AUS/E4S, `kernel-4.18.0-305.209.1.el8_4`.
+  - **RHSA-2026:71657** / **71687**: 7 ELS,
+    `kernel-rt` / `kernel-3.10.0-1160.164.1.el7`.
+  - `sctp.ko` / `sctp_diag.ko` ship in `kernel-modules-extra`, which also
+    installs a `blacklist sctp` modprobe.d file.
+  - The Rocky rows' *Current kernel* NVRs are read from BaseOS repodata
+    (`primary.xml.gz`, highest `rel`).
+  - No AlmaLinux errata or OSV entry exists for this CVE.
+- **Amazon Linux** (via the AL2023 `updateinfo.xml.gz`, parsed by
+  `scripts/alas-cve`, which is line-safe for the packed `updateinfo.xml`;
+  per-stream *Current kernel* from `primary.xml.gz`):
+  - **ALAS2023-2026-2143** (2026-09-14) fixes the default `kernel` at
+    `6.1.186-228.374.amzn2023`.
+  - **ALAS2023-2026-2110** (2026-08-31) fixes `kernel6.12` at
+    `6.12.103-127.188.amzn2023`.
+  - **ALAS2023-2026-2106** (2026-08-31) fixes `kernel6.18` at
+    `6.18.44-99.149.amzn2023`.
 {{< /details >}}
 
 ## References
