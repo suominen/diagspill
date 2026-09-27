@@ -619,7 +619,13 @@ score yet. Red Hat's own score may be marked `draft`.
   lowercase>.json`, where `product_status.known_affected` /
   `known_not_affected` carry the per-product verdicts, `flags` the
   justification (e.g. `vulnerable_code_not_present`), and a shipped RHSA
-  appears as a `vendor_fix` remediation with the fixed NVR. Never
+  appears as a `vendor_fix` remediation with the fixed NVR.  A
+  `known_affected` entry does not by itself mean a product is unfixed: the
+  record keeps catch-all entries such as
+  `red_hat_enterprise_linux_9:kernel-rt` after the fixes ship, and on RHEL
+  9 and 10 the real-time kernel ships in the same RHSA as `kernel` (its
+  `vendor_fix` product IDs include `RT-…` / `NFV-…` streams).  Check those
+  product IDs before calling a `kernel-rt` stream unfixed.  Never
   WebFetch the `access.redhat.com/security/cve/` page — it is
   JS-rendered and returns only the navigation shell headlessly, which
   reads as a false "no record". While `fix_state` is Affected with an
