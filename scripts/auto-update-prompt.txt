@@ -52,7 +52,8 @@ leave behind is the edited tracker (and its commit).
 1. Read CLAUDE.md to learn the project conventions (the single-axis kernel
    verdict, any reachability/exposure discriminator that lives in prose not
    columns, the status wording, the sticky First fixed / Fixed since rules,
-   and the date handling), then read site/content/_index.md.
+   the per-distro prose shape rule, and the date handling), then read
+   site/content/_index.md.
 
 2. Re-verify each entry currently marked vulnerable (:x:), staged
    (:warning:), or unverified (:grey_question:).

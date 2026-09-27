@@ -90,6 +90,16 @@ follow `~/src/cve-tracker-template/LIFECYCLE.md` § "Retiring a tracker".
   is coming — switch to the current default kernel"), never with the
   row decision ("so it gets no row here") — the reader can see the
   table for themselves.
+- **Per-distro `###` prose: shape and budget.**  Open a section with one
+  or two sentences; put anything enumerable (advisories, kernel series,
+  streams, flake refs) in a bullet list; give every other idea its own
+  short paragraph — none longer than about eight rendered lines.  Before
+  adding a sentence, check that it says something no table cell says:
+  never restate a row's version, date, verdict, or *Status* note.
+  Provenance (commit SHAs, "confirmed via …", mirror lag) belongs in the
+  verification log.  **When a row flips, rewrite the section to describe
+  the current state** — never append "now fixed" / "has now" sentences to
+  the old text.  The section should read as if written fresh today.
 - **One command per fenced code block, no inline comments.** Each `bash`
   code fence holds a single command with nothing after it on the line. Put
   any clarifying note in the prose *before* the block.
