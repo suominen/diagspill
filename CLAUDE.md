@@ -341,7 +341,9 @@ lead or append a clause to a neighbouring sub-bullet.  Name each pairing
 explicitly (`6daa7f0` on `master`, `38fa3e0` on `bookworm-6.8`) rather
 than relying on the order of an `A / B` list.  `scripts/check-shape`
 (run by `make check`) enforces these limits and the eight-line limit on
-per-distro paragraphs and bullets.
+per-distro paragraphs and bullets.  The auto-update wrapper runs it
+too, on every run in which the worktree's page differs from
+`origin/main`, and fails the unit when the page is over budget.
 
 Update the section rather than appending a line per re-check. Edit the
 relevant subsection in place — usually the one sub-bullet whose fact

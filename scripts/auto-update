@@ -377,3 +377,37 @@ claude -p \
   --settings "${settings}" \
   --output-format text \
   --max-budget-usd 3
+
+
+# Size-check the tracker page whenever the worktree's copy differs from
+# origin/main -- that is, whenever the agent has changed it, on this
+# run or an earlier one not yet merged. Keying on the difference rather
+# than on HEAD moving also covers an amended commit and a run whose
+# commit landed before claude exited non-zero (set -e skips this block
+# then, so the next run picks it up). What is measured is the working
+# tree, which after a clean run equals the branch tip a merge takes.
+#
+# It is the CODE copy of check-shape that runs (the worktree's is
+# untrusted, like the rest of its scripts/). An over-budget page fails
+# the unit, so the run shows up in `systemctl --user --failed` and the
+# journal names each offending block; the commit stays on auto-update
+# for review, since merging to main is manual anyway.
+if ! git diff --quiet origin/main -- site/content/_index.md
+then
+  rc=0
+  "${CODE}/scripts/check-shape" "${WORKTREE}/site/content/_index.md" ||
+  rc=$?
+  case "${rc}" in
+  0)
+    ;;
+  1)
+    echo "${PROG}: the agent's changes leave the tracker over its size" \
+         'budget; split the blocks listed above before merging' 1>&2
+    exit 1
+    ;;
+  *)
+    echo "${PROG}: check-shape failed (exit ${rc})" 1>&2
+    exit 1
+    ;;
+  esac
+fi
