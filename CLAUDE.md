@@ -571,7 +571,10 @@ score yet. Red Hat's own score may be marked `draft`.
   ```
 - **Proxmox VE** (x86-only; Ubuntu-derived): the `pve-no-subscription`
   `Packages.gz` (needs `zcat`) — *Current kernel* comes from **only** that
-  apt index. The pve-kernel git changelog leads apt (git → pvetest →
+  apt index. Version cells hold the package `Version:` (`7.0.14-19`),
+  never the `-pve` suffix that belongs to package names and `uname -r`
+  (`proxmox-kernel-7.0.14-19-pve-signed`, `7.0.14-19-pve`).
+  The pve-kernel git changelog leads apt (git → pvetest →
   pve-no-subscription → enterprise), so use it only to confirm a
   cherry-pick, never as the version — mixing the two flips the version
   forth-and-back between runs; a cherry-pick in git not yet published to
