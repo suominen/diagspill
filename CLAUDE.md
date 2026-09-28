@@ -581,14 +581,32 @@ score yet. Red Hat's own score may be marked `draft`.
   Ubuntu-<base>` rebase with no CVE-named changelog line, so compare the
   newest rebase base version against Ubuntu's fixed version for the
   series (`https://ubuntu.com/security/cves/CVE-2026-74469.json`, the
-  `packages[].statuses[]` entries — `released` plus version); base ≥
-  Ubuntu's fixed version means the PVE build carries the fix even with
-  no cherry-pick line. ubuntu.com intermittently stalls for 20–30 s and
-  then answers 504, so fetch with a per-attempt timeout and retries
+  `packages[].statuses[]` entries — the version a `released` **or**
+  `pending` status names); base ≥ Ubuntu's fixed version means the PVE
+  build carries the fix even with no cherry-pick line. ubuntu.com
+  intermittently stalls for 20–30 s and then answers 504, so fetch with
+  a per-attempt timeout and retries
   (`curl -fsSL --retry 4 --retry-all-errors --retry-delay 10 -m 45`)
   rather than giving up on the first error; the search endpoint
   `https://ubuntu.com/security/cves.json?q=CVE-2026-74469` returns the same
-  record under `.cves[]` (select the exact `id`) as an alternate.
+  record under `.cves[]` (select the exact `id`) as an alternate. Prove
+  it rather than trusting the version compare: the Ubuntu build's
+  changelog at
+  `https://changelogs.ubuntu.com/changelogs/pool/main/l/linux/linux_<ver>/changelog`
+  lists every upstream stable subject it pulled in, so grep it for the
+  fix's subject (Launchpad's git `plain` file URLs return 403
+  headlessly, so the source itself cannot be read that way). Then
+  confirm PVE built from that tag: the `submodules/ubuntu-kernel`
+  gitlink at the build's `bump version to …` commit must equal the tag's
+  peeled (`^{}`) commit from `git ls-remote
+  https://git.proxmox.com/git/mirror_ubuntu-kernels.git
+  'refs/tags/Ubuntu-<ver>*'`. Ubuntu's *pending* / *released* status
+  describes Ubuntu's own archive, not the source Proxmox compiles, so
+  once both checks pass the published PVE build is Fixed even while
+  Ubuntu still says *pending* (PPPoEject's PVE 9 flipped this way).
+  *First fixed* is the first `pve-no-subscription` build on such a base;
+  *Fixed since* is that `.deb`'s `Last-Modified` (HEAD its `Filename`
+  from `Packages.gz` under `http://download.proxmox.com/debian/pve/`).
   Kernel.org EOL for the series proves nothing
   here — Ubuntu keeps fixing series long after upstream EOL; named
   cherry-picks are the signal only for series Ubuntu no longer fixes
