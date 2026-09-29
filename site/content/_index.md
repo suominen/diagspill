@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-09-28
+lastmod: 2026-09-29
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -134,9 +134,9 @@ carries the fix, and stay `—` until then.
 | Rocky Linux / RHEL | 10 | 6.12.0-211.60.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 9 | 5.14.0-687.52.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 8 | 4.18.0-553.168.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
-| Amazon Linux | 2023 (default) | 6.1.186-228.376 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
-| Amazon Linux | 2023 (6.12 opt-in) | 6.12.103-129.197 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
-| Amazon Linux | 2023 (6.18 opt-in) | 6.18.48-109.150 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
+| Amazon Linux | 2023 (default) | 6.1.188-233.385 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
+| Amazon Linux | 2023 (6.12 opt-in) | 6.12.110-135.201 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
+| Amazon Linux | 2023 (6.18 opt-in) | 6.18.51-120.162 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
 {.distros}
 
 ### Linux kernel
