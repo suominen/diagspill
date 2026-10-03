@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-10-02
+lastmod: 2026-10-03
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -121,7 +121,7 @@ carries the fix, and stay `—` until then.
 | Debian | forky (testing) | 7.2.8-1 | 7.1.8-1 | 2026-08-16 | :white_check_mark: Fixed |
 | Debian | 13 (trixie) | 6.12.111-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
-| Debian | 12 (6.12 opt-in) | 6.12.107-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
+| Debian | 12 (6.12 opt-in) | 6.12.111-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
 | Proxmox VE | 9 (default) | 7.0.14-20 | 7.0.14-18 | 2026-09-17 | :white_check_mark: Fixed — folded into Ubuntu-resolute rebase |
 | Proxmox VE | 8 (default) | 6.8.12-43 | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
 | NixOS | master | 6.18.54 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
