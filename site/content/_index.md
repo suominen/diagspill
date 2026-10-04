@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-10-03
+lastmod: 2026-10-04
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -109,30 +109,30 @@ carries the fix, and stay `—` until then.
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
 | Linux kernel | mainline | 7.3-rc5 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
-| Linux kernel | 7.2.x | 7.2.8 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
+| Linux kernel | 7.2.x | 7.2.9 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
 | Linux kernel | 7.1.x | 7.1.13 | 7.1.8 | 2026-08-09 | :white_check_mark: Fixed — EOL |
-| Linux kernel | 6.18.x | 6.18.54 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 6.12.x | 6.12.111 | 6.12.103 | 2026-08-09 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 6.6.x | 6.6.157 | 6.6.151 | 2026-08-09 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 6.1.x | 6.1.188 | 6.1.183 | 2026-08-19 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 5.15.x | 5.15.221 | 5.15.216 | 2026-08-19 | :white_check_mark: Fixed — LTS |
-| Linux kernel | 5.10.x | 5.10.270 | 5.10.265 | 2026-08-19 | :white_check_mark: Fixed — LTS |
-| Debian | sid (unstable) | 7.2.8-1 | 7.1.8-1 | 2026-08-12 | :white_check_mark: Fixed |
+| Linux kernel | 6.18.x | 6.18.55 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.12.x | 6.12.112 | 6.12.103 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.6.x | 6.6.158 | 6.6.151 | 2026-08-09 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 6.1.x | 6.1.189 | 6.1.183 | 2026-08-19 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 5.15.x | 5.15.222 | 5.15.216 | 2026-08-19 | :white_check_mark: Fixed — LTS |
+| Linux kernel | 5.10.x | 5.10.271 | 5.10.265 | 2026-08-19 | :white_check_mark: Fixed — LTS |
+| Debian | sid (unstable) | 7.2.9-1 | 7.1.8-1 | 2026-08-12 | :white_check_mark: Fixed |
 | Debian | forky (testing) | 7.2.8-1 | 7.1.8-1 | 2026-08-16 | :white_check_mark: Fixed |
 | Debian | 13 (trixie) | 6.12.111-1 | 6.12.105-1 | 2026-08-25 | :white_check_mark: Fixed — DSA-6466-1 |
 | Debian | 12 (bookworm) | 6.1.187-1 | 6.1.187-1 | 2026-09-08 | :white_check_mark: Fixed — DLA-4777-1 |
 | Debian | 12 (6.12 opt-in) | 6.12.111-1~deb12u1 | 6.12.107-1~deb12u1 | 2026-09-16 | :white_check_mark: Fixed |
 | Proxmox VE | 9 (default) | 7.0.14-20 | 7.0.14-18 | 2026-09-17 | :white_check_mark: Fixed — folded into Ubuntu-resolute rebase |
 | Proxmox VE | 8 (default) | 6.8.12-43 | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
-| NixOS | master | 6.18.54 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
-| NixOS | release-26.05 | 6.18.54 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
+| NixOS | master | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
+| NixOS | release-26.05 | 6.18.55 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
 | NixOS | Unstable | 6.18.54 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
-| NixOS | Unstable (small) | 6.18.54 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
+| NixOS | Unstable (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | Unstable (nixpkgs) | 6.18.54 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | 26.05 | 6.18.54 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
-| NixOS | 26.05 (small) | 6.18.54 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
+| NixOS | 26.05 (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.61.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 9 | 5.14.0-687.53.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 9 | 5.14.0-687.54.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 8 | 4.18.0-553.170.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
 | Amazon Linux | 2023 (default) | 6.1.188-233.386 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
 | Amazon Linux | 2023 (6.12 opt-in) | 6.12.110-135.202 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
