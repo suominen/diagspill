@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-10-04
+lastmod: 2026-10-05
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -108,7 +108,7 @@ carries the fix, and stay `—` until then.
 
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
-| Linux kernel | mainline | 7.3-rc5 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
+| Linux kernel | mainline | 7.3-rc6 | 7.2-rc6 | 2026-08-02 | :white_check_mark: Fixed — carries `bd0e9289e264` |
 | Linux kernel | 7.2.x | 7.2.9 | 7.2 | 2026-08-16 | :white_check_mark: Fixed |
 | Linux kernel | 7.1.x | 7.1.13 | 7.1.8 | 2026-08-09 | :white_check_mark: Fixed — EOL |
 | Linux kernel | 6.18.x | 6.18.55 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed — LTS |
@@ -126,10 +126,10 @@ carries the fix, and stay `—` until then.
 | Proxmox VE | 8 (default) | 6.8.12-43 | 6.8.12-43 | 2026-08-18 | :white_check_mark: Fixed — cherry-pick |
 | NixOS | master | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | release-26.05 | 6.18.55 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
-| NixOS | Unstable | 6.18.54 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
+| NixOS | Unstable | 6.18.55 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | Unstable (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | NixOS | Unstable (nixpkgs) | 6.18.54 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
-| NixOS | 26.05 | 6.18.54 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
+| NixOS | 26.05 | 6.18.55 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.61.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
 | Rocky Linux / RHEL | 9 | 5.14.0-687.54.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
