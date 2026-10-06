@@ -563,12 +563,26 @@ score yet. Red Hat's own score may be marked `draft`.
   curl -fsSL 'https://api.ftp-master.debian.org/madison?package=linux&s=sid,forky,trixie,bookworm,bullseye&text=on'
   ```
 
-  For a *Fixed since* date, use the `first_seen` of the fixed version in
-  snapshot.debian.org:
+  For sid's *Fixed since* date, use the `first_seen` of the fixed version
+  in snapshot.debian.org:
 
   ```
   curl -fsSL 'https://snapshot.debian.org/mr/package/linux/<version>/srcfiles?fileinfo=1'
   ```
+
+  That dates the upload to unstable, which is **not** forky's date:
+  forky gets the build only when it migrates to testing, often a week or
+  more later, so never copy sid's date to forky. Date forky by the
+  `linux <version> MIGRATED to testing` entry on the package news page.
+  That entry is posted about a day after the migration; until it appears,
+  record the first-observation date and say so in the verification log:
+
+  ```
+  curl -fsSL 'https://tracker.debian.org/pkg/linux/news/'
+  ```
+
+  A stable suite's date is its DSA/DLA, or the point release that
+  carried the fix.
 - **Proxmox VE** (x86-only; Ubuntu-derived): the `pve-no-subscription`
   `Packages.gz` (needs `zcat`) — *Current kernel* comes from **only** that
   apt index. Version cells hold the package `Version:` (`7.0.14-19`),
