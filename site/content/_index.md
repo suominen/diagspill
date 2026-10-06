@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-10-05
+lastmod: 2026-10-06
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -128,7 +128,7 @@ carries the fix, and stay `—` until then.
 | NixOS | release-26.05 | 6.18.55 | 6.18.44 | 2026-08-09 | :white_check_mark: Fixed |
 | NixOS | Unstable | 6.18.55 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | Unstable (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
-| NixOS | Unstable (nixpkgs) | 6.18.54 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
+| NixOS | Unstable (nixpkgs) | 6.18.55 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | 26.05 | 6.18.55 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
 | Rocky Linux / RHEL | 10 | 6.12.0-211.61.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
