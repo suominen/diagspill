@@ -257,7 +257,7 @@ picks the fix up; *Fixed since* is the release tag date from
 
 `zcat` / `gunzip` **are** in the headless allowlist — use them for the
 `Packages.gz` / repodata pulls — as are `grep`, `sort`, `rpmsort`,
-`tail`, `jq`, `xq` and `tee`
+`tail`, `jq`, `xq`, `xz -dc` and `tee`
 (`tee` because a `>` redirection into the worktree is refused). Pull
 only kernel versions and advisory state — the tracker records no other
 per-distro facts.
@@ -377,6 +377,9 @@ leave the file alone and don't commit — don't bump `lastmod`.
   changelog cross-check queries `other.xml.gz` with it.
 - `rpmsort` (Debian package `rpm`) on the auto-update host — orders
   EL kernel builds by RPM rules for the Rocky rows.
+- `xz` (Debian package `xz-utils`) on the auto-update host — decompresses
+  snapshot.debian.org's past `dists/testing` indexes when dating a
+  forky fix.
 - The Nix flake provides all of these for an interactive shell:
   `nix develop` (or `cd` in if direnv is set up). The timer service
   runs on the host `PATH`, though, so the auto-update host still needs
@@ -572,16 +575,28 @@ score yet. Red Hat's own score may be marked `draft`.
 
   That dates the upload to unstable, which is **not** forky's date:
   forky gets the build only when it migrates to testing, often a week or
-  more later, so never copy sid's date to forky. Date forky by the
-  `linux <version> MIGRATED to testing` entry on the package news page.
-  That entry is posted about a day after the migration; until it appears,
-  record the first-observation date and say so in the verification log:
+  more later, so never copy sid's date to forky. forky's date is the UTC
+  day testing's default kernel moved to a fixed build. The
+  `linux <version> MIGRATED to testing` entry on the package news page
+  narrows it down, but the entry can be dated a day late:
 
   ```
   curl -fsSL 'https://tracker.debian.org/pkg/linux/news/'
   ```
 
-  A stable suite's date is its DSA/DLA, or the point release that
+  Confirm the day on snapshot.debian.org, which keeps every past state
+  of testing. Read the `linux-image-amd64` version at a UTC timestamp
+  `<ts>` (e.g. `20261005T120000Z`), and bisect until the change falls
+  within one UTC day — testing's source index lists several `linux`
+  versions at once, so read the default image, not `Sources`:
+
+  ```
+  curl -fsSL 'https://snapshot.debian.org/archive/debian/<ts>/dists/testing/main/binary-amd64/Packages.xz' | xz -dc | grep -A10 -x 'Package: linux-image-amd64' | grep -m1 '^Version:'
+  ```
+
+  If snapshot does not show the migration yet, record the date the run
+  first saw forky at the fixed version and say so in the verification
+  log. A stable suite's date is its DSA/DLA, or the point release that
   carried the fix.
 - **Proxmox VE** (x86-only; Ubuntu-derived): the `pve-no-subscription`
   `Packages.gz` (needs `zcat`) — *Current kernel* comes from **only** that

@@ -238,6 +238,9 @@ HELPERS="${CODE}/scripts"
 
 # The core allowlist in the settings heredoc below is shared;
 # mode_tools adds only what this tracker kind's lookup recipes need.
+# The core list carries `xz -dc` (stdin to stdout only): snapshot.debian.org
+# serves past Sources and Packages indexes only xz-compressed, and both
+# tracker kinds date a Debian testing migration from them.
 case "${MODE}" in
 kernel)
   # zcat/gunzip unpack the gzipped repodata and Packages indexes,
@@ -332,6 +335,7 @@ settings="$(jq -c --arg home "${HOME}" \
 	"Bash(sort:*)",
 	"Bash(jq:*)",
 	"Bash(tee:*)",
+	"Bash(xz -dc:*)",
 	"Bash(${HELPERS}/nixos-first-shipped:*)",
 	"Bash(git add:*)",
 	"Bash(git commit:*)",
