@@ -687,14 +687,27 @@ score yet. Red Hat's own score may be marked `draft`.
   `red_hat_enterprise_linux_9:kernel-rt` after the fixes ship, and on RHEL
   9 and 10 the real-time kernel ships in the same RHSA as `kernel` (its
   `vendor_fix` product IDs include `RT-…` / `NFV-…` streams).  Check those
-  product IDs before calling a `kernel-rt` stream unfixed.  Never
+  product IDs before calling a `kernel-rt` stream unfixed.  **The
+  current minor release is not labelled as such**: its `vendor_fix`
+  product IDs read `BaseOS-8.10.0.Z.MAIN.EUS:…`,
+  `BaseOS-9.8.0.Z.MAIN.EUS:…` or plain `BaseOS-10.2.Z:…`.  A
+  `Z.MAIN.EUS` ID is the main stream Rocky rebuilds, not an EUS variant
+  (those read `Z.EUS`, `Z.E4S`, `Z.AUS`, `Z.TUS`) — DiagSpill's Rocky rows
+  sat at "no RHSA yet" for twelve days after RHSA-2026:71213/71232/71233
+  shipped because of this misreading.  Cross-check hydra: an
+  `affected_release` entry whose `product_name` is exactly `Red Hat
+  Enterprise Linux <N>` is the main-stream fix.  Never
   WebFetch the `access.redhat.com/security/cve/` page — it is
   JS-rendered and returns only the navigation shell headlessly, which
   reads as a false "no record". While `fix_state` is Affected with an
   empty `affected_release`, EL is unfixed. Confirm the Rocky ship via
   BaseOS repodata (`repomd.xml` → `*-primary.xml.gz`, needs `zcat`)
   reaching that
-  NVR; AlmaLinux is the fastest rebuild (cross-check OSV
+  NVR — Rocky can skip RHEL's exact build, so the first fixed Rocky build
+  may be a later one; confirm it carries the fix by finding the fix's
+  subject in the build's BaseOS `other.xml.gz` changelog (an XML parse,
+  not a line grep — see the Amazon note below); AlmaLinux is the fastest
+  rebuild (cross-check OSV
   `https://api.osv.dev/v1/vulns/CVE-2026-74469`). Red Hat also marks kernels that
   predate the bug **Not affected**, which confirms any pre-introduction EL
   rows.

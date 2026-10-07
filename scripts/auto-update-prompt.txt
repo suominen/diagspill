@@ -117,6 +117,10 @@ leave behind is the edited tracker (and its commit).
         https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-74469.json
         and read the kernel fix_state + affected_release. While fix_state is
         Affected with no affected_release/RHSA, EL is unfixed (Rocky :x:).
+        An affected_release product_name of exactly "Red Hat Enterprise
+        Linux <N>" is the main-stream fix; in CSAF/VEX the main stream's
+        product IDs read `<minor>.Z.MAIN.EUS` (or plain `10.x.Z`) - that
+        is NOT an EUS variant (see CLAUDE.md).
         When an RHSA + fixed NVR appears, confirm via Rocky BaseOS repodata
         (zcat; order kernel builds with rpmsort as jq-built
         `kernel-epoch:ver-rel` strings, never the raw <version> element

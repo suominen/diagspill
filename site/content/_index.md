@@ -3,7 +3,7 @@ title: "DiagSpill — SCTP sock_diag transport-count overflow"
 description: "Linux kernel SCTP sock_diag heap overflow (CVE-2026-74469, DiagSpill) — an unprivileged local user overflows the kernel heap by ~8 MiB with no user namespace or capability — distro patch status tracker"
 layout: "single"
 date: 2026-09-18
-lastmod: 2026-10-06
+lastmod: 2026-10-07
 cover:
   image: "diagspill-tracker.png"
   alt: "DiagSpill — Linux kernel SCTP sock_diag transport-count overflow tracker"
@@ -131,9 +131,9 @@ carries the fix, and stay `—` until then.
 | NixOS | Unstable (nixpkgs) | 6.18.55 | 6.18.44 | 2026-08-11 | :white_check_mark: Fixed |
 | NixOS | 26.05 | 6.18.55 | 6.18.44 | 2026-08-12 | :white_check_mark: Fixed |
 | NixOS | 26.05 (small) | 6.18.55 | 6.18.44 | 2026-08-10 | :white_check_mark: Fixed |
-| Rocky Linux / RHEL | 10 | 6.12.0-211.61.1.el10_2 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 9 | 5.14.0-687.54.1.el9_8 | — | — | :x: Vulnerable — no RHSA yet |
-| Rocky Linux / RHEL | 8 | 4.18.0-553.170.1.el8_10 | — | — | :x: Vulnerable — no RHSA yet |
+| Rocky Linux / RHEL | 10 | 6.12.0-211.62.1.el10_2 | 6.12.0-211.60.1.el10_2 | 2026-09-25 | :white_check_mark: Fixed — RHSA-2026:71233 |
+| Rocky Linux / RHEL | 9 | 5.14.0-687.54.1.el9_8 | 5.14.0-687.51.1.el9_8 | 2026-09-25 | :white_check_mark: Fixed — RHSA-2026:71232 |
+| Rocky Linux / RHEL | 8 | 4.18.0-553.171.1.el8_10 | 4.18.0-553.168.1.el8_10 | 2026-09-24 | :white_check_mark: Fixed — RHSA-2026:71213 |
 | Amazon Linux | 2023 (default) | 6.1.188-233.386 | 6.1.186-228.374 | 2026-09-14 | :white_check_mark: Fixed — ALAS2023-2026-2143 |
 | Amazon Linux | 2023 (6.12 opt-in) | 6.12.110-135.202 | 6.12.103-127.188 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2110 |
 | Amazon Linux | 2023 (6.18 opt-in) | 6.18.51-120.163 | 6.18.44-99.149 | 2026-08-31 | :white_check_mark: Fixed — ALAS2023-2026-2106 |
@@ -214,19 +214,21 @@ Which ref a flake input follows:
 
 RHEL-family kernels are long-lived forks that carry SCTP, so all three
 EL lines — EL10 (6.12-based), EL9 (5.14-based) and EL8 (4.18-based) —
-are in-window. Rocky rebuilds RHEL's kernels, so a Rocky fix follows
-Red Hat's advisory for the current minor release.
+are in-window. Rocky rebuilds RHEL's current minor-release kernel.
 
-On 2026-09-24 Red Hat fixed several extended-support streams, each with
-its own advisory; none of these covers the current minor releases that
-Rocky rebuilds:
+Red Hat fixed the current minor releases and its extended-support streams
+in one batch of advisories on 2026-09-24:
 
-- **RHEL 10:** 10.0 EUS RHSA-2026:71599.
-- **RHEL 9:** 9.6 EUS RHSA-2026:71631; 9.4 E4S RHSA-2026:71569;
-  9.2 E4S RHSA-2026:71601 (`kernel-rt` RHSA-2026:71606).
-- **RHEL 8:** 8.8 TUS/E4S RHSA-2026:71594; 8.6 AUS/EUS RHSA-2026:71592;
-  8.4 AUS/E4S RHSA-2026:71565.
+- **RHEL 10:** 10.2 RHSA-2026:71233; 10.0 EUS RHSA-2026:71599.
+- **RHEL 9:** 9.8 RHSA-2026:71232; 9.6 EUS RHSA-2026:71631; 9.4 E4S
+  RHSA-2026:71569; 9.2 E4S RHSA-2026:71601 (`kernel-rt` RHSA-2026:71606).
+- **RHEL 8:** 8.10 RHSA-2026:71213; 8.8 TUS/E4S RHSA-2026:71594; 8.6
+  AUS/EUS RHSA-2026:71592; 8.4 AUS/E4S RHSA-2026:71565.
 - **RHEL 7 ELS:** RHSA-2026:71687 (`kernel-rt` RHSA-2026:71657).
+
+On RHEL 9 and 10 the real-time kernel ships in the same advisory as
+`kernel`. The RHEL 8 real-time kernel (`kernel-rt`) has no fix yet; a
+host running it stays vulnerable until Red Hat ships one.
 
 **`sctp` does not autoload on a stock EL host.** On EL8, EL9 and EL10
 `sctp.ko` and `sctp_diag.ko` ship only in `kernel-modules-extra`, which
@@ -479,11 +481,15 @@ readers never need it.
 - **Rocky / RHEL family** (via Red Hat's securitydata and CSAF/VEX
   record, initial release 2026-08-15; Rocky BaseOS repodata; OSV):
   - EL8/9/10 all carry SCTP and are in-window.
-  - The record rates the general EL8/9/10 `kernel` package **Affected**,
-    with no `vendor_fix` and no RHSA against it.
-  - The record's advisories, all dated **2026-09-24**, each cover only a
-    legacy Advanced/Extended/Update-Support product variant, not the
-    general EL7/8/9/10 stream; they are listed below by stream.
+  - The record's advisories are all dated **2026-09-24**; VEX labels the
+    current-minor streams `10.2.Z`, `9.8.0.Z.MAIN.EUS` and
+    `8.10.0.Z.MAIN.EUS`.
+  - **RHSA-2026:71233**: 10.2, `kernel-6.12.0-211.59.1.el10_2`, with the
+    `RT-` / `NFV-` streams.
+  - **RHSA-2026:71232**: 9.8, `kernel-5.14.0-687.51.1.el9_8`, with the
+    `RT-` / `NFV-` streams.
+  - **RHSA-2026:71213**: 8.10, `kernel-4.18.0-553.167.1.el8_10`; no
+    `RT-` stream.
   - **RHSA-2026:71599**: 10.0 EUS, `kernel-6.12.0-55.107.1.el10_0`.
   - **RHSA-2026:71631**: 9.6 EUS, `kernel-5.14.0-570.144.1.el9_6`.
   - **RHSA-2026:71569**: 9.4 E4S, `kernel-5.14.0-427.152.1.el9_4`.
@@ -496,9 +502,19 @@ readers never need it.
     `kernel-rt` / `kernel-3.10.0-1160.164.1.el7`.
   - `sctp.ko` / `sctp_diag.ko` ship in `kernel-modules-extra`, which also
     installs a `blacklist sctp` modprobe.d file.
+  - EL8 `kernel-rt` is still `known_affected`, with no `vendor_fix`.
+  - Rocky's BaseOS `other.xml.gz` changelog carries `sctp: prevent peer
+    transport count overflow (Xin Long)` from the first fixed builds:
+    RHEL-216247 in Rocky 10, RHEL-216251 in Rocky 9, RHEL-216297 in
+    Rocky 8.
+  - Rocky skipped RHEL's exact 10.2 and 8.10 NVRs; its first fixed
+    builds are `211.60.1.el10_2` and `553.168.1.el8_10`.
+  - *Fixed since* is the first fixed build's upload date in the BaseOS
+    `Packages/k/` listing.
   - The Rocky rows' *Current kernel* NVRs are read from BaseOS repodata
-    (`primary.xml.gz`, highest `rel`).
-  - No AlmaLinux errata or OSV entry exists for this CVE.
+    (`primary.xml.gz`, highest build by `rpmsort`).
+  - AlmaLinux rebuilt the three advisories as ALSA-2026:71213, 71232 and
+    71233, but neither its errata nor OSV list this CVE against them.
 - **Amazon Linux** (via the AL2023 `updateinfo.xml.gz`, parsed by
   `scripts/alas-cve`, which is line-safe for the packed `updateinfo.xml`;
   per-stream *Current kernel* from `primary.xml.gz`):
