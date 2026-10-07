@@ -54,17 +54,16 @@ The rendered site is published at <https://kimmo.cloud/diagspill/>.
 
 ## Your task
 
-Keep `site/content/_index.md` (the canonical tracker) up to date as the
-kernel fix is picked up by distro kernels. After edits, rebuild with
-`make build` and publish with `make dist`.
-
-A scheduled background agent runs against this repo to refresh the tracker
-on its own. If you find the file has been edited since you last looked,
-that's likely why — re-read before assuming stale state.
-
-To retire (archive) this tracker — when every tracked distribution has
-shipped a fix, or the bug is otherwise no longer worth active tracking —
-follow `~/src/cve-tracker-template/LIFECYCLE.md` § "Retiring a tracker".
+This tracker was archived on 2026-10-07 — it is no longer updated.
+Every maintained upstream stable line carries the `bd0e9289e264` fix, as
+do Debian, Proxmox VE, every tracked NixOS ref, Rocky Linux / RHEL 10/9/8
+(the last rows to flip: RHSA-2026:71233/71232/71213 of 2026-09-24,
+rebuilt by Rocky as `211.60.1.el10_2`, `687.51.1.el9_8` and
+`553.168.1.el8_10`), and all three AL2023 kernel streams.  The
+auto-update (timer, unit symlinks, worktree, `auto-update` branch) has
+been torn down; do not resume routine updates.  If a genuinely new fact
+surfaces, edit `site/content/_index.md`, rebuild with `make build`, and
+publish with `make dist` — but the default state is frozen.
 
 ## The tracker file (`site/content/_index.md`) — important constraints
 

@@ -10,6 +10,11 @@ cover:
   hiddenInSingle: true
 ---
 
+*This tracker is no longer updated.  Every maintained upstream stable
+line carries the fix, as do Debian, Proxmox VE, every tracked NixOS ref,
+Rocky Linux / RHEL 10, 9 and 8, and all three Amazon Linux 2023 kernel
+streams — install a fixed kernel and reboot into it.*
+
 ## Summary
 
 | Field | Detail |
@@ -102,9 +107,9 @@ A row is **Fixed** only if its kernel carries the [`bd0e9289e264`][fix]
 backport; every SCTP-capable kernel without it is in-window and
 **Vulnerable**. The first group is the upstream kernel; the rest are a
 focused set of x86-64 distributions, with per-distribution detail in the
-sections that follow. *Current kernel* tracks the live package or point
-release; *First fixed* and *Fixed since* are set once, when a row first
-carries the fix, and stay `—` until then.
+sections that follow. *Current kernel* is the package or point release
+current when this tracker was retired; *First fixed* and *Fixed since*
+record the first build carrying the fix and the date it shipped.
 
 | Distribution | Release | Current kernel | First fixed | Fixed since | Status |
 |---|---|---|---|---|---|
@@ -227,8 +232,9 @@ in one batch of advisories on 2026-09-24:
 - **RHEL 7 ELS:** RHSA-2026:71687 (`kernel-rt` RHSA-2026:71657).
 
 On RHEL 9 and 10 the real-time kernel ships in the same advisory as
-`kernel`. The RHEL 8 real-time kernel (`kernel-rt`) has no fix yet; a
-host running it stays vulnerable until Red Hat ships one.
+`kernel`. The RHEL 8 real-time kernel (`kernel-rt`) had no fix when this
+tracker was retired; on a host running it, check Red Hat's advisories for
+a fixed `kernel-rt` build before considering it safe.
 
 **`sctp` does not autoload on a stock EL host.** On EL8, EL9 and EL10
 `sctp.ko` and `sctp_diag.ko` ship only in `kernel-modules-extra`, which
